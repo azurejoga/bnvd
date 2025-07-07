@@ -1,0 +1,483 @@
+{% extends "base.html" %}
+
+{% set cve = vuln.cve %}
+{% set description_text = vuln.cve.descriptions[0].value if vuln.cve.descriptions else 'Informações detalhadas sobre vulnerabilidade de segurança' %}
+{% set severity = vuln.cve.metrics.cvssMetricV31[0].cvssData.baseSeverity if vuln.cve.metrics and vuln.cve.metrics.cvssMetricV31 else 'Unknown' %}
+
+{% block title %}{{ cve.id }} - Vulnerabilidade de Segurança | BNVD{% endblock %}
+
+{% block description %}Vulnerabilidade {{ cve.id }} com severidade {{ severity }}. {{ description_text[:140] }}...{% endblock %}
+
+{% block keywords %}{{ cve.id }}, vulnerabilidade, segurança, CVE, {{ severity.lower() }}, cibernética, BNVD, Brasil{% endblock %}
+
+{% block robots %}index, follow{% endblock %}
+
+{% block canonical %}{{ url_for('detalhes', cve_id=cve.id, _external=True) }}{% endblock %}
+
+{% block og_type %}article{% endblock %}
+
+{% block structured_data %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Vulnerabilidade {{ cve.id }}",
+    "description": "{{ description_text | replace('"', '\\"') }}",
+    "datePublished": "{{ cve.published }}",
+    "dateModified": "{{ cve.lastModified }}",
+    "author": {
+        "@type": "Organization",
+        "name": "National Vulnerability Database (NVD)"
+    },
+    "publisher": {
+        "@type": "Organization",
+        "name": "Banco Nacional de Vulnerabilidades Cibernéticas (BNVD)",
+        "logo": {
+            "@type": "ImageObject",
+            "url": "{{ url_for('static', filename='images/bnvd-logo.png', _external=True) }}"
+        }
+    },
+    "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "{{ url_for('detalhes', cve_id=cve.id, _external=True) }}"
+    },
+    "about": {
+        "@type": "Thing",
+        "name": "Vulnerabilidade de Segurança {{ cve.id }}",
+        "description": "{{ description_text | replace('"', '\\"') }}"
+    },
+    "breadcrumb": {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Início",
+                "item": "{{ url_for('index', _external=True) }}"
+            },
+            {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Buscar",
+                "item": "{{ url_for('busca', _external=True) }}"
+            },
+            {
+                "@type": "ListItem",
+                "position": 3,
+                "name": "{{ cve.id }}",
+                "item": "{{ url_for('detalhes', cve_id=cve.id, _external=True) }}"
+            }
+        ]
+    }
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    {% set cve = vuln.cve %}
+    
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Início</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('busca') }}">Buscar</a></li>
+                    <li class="breadcrumb-item active">{{ cve.id }}</li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h1 class="display-6 fw-bold mb-2">{{ cve.id }}</h1>
+                    <div class="text-muted">
+                        <i class="fas fa-calendar me-1"></i>
+                        Publicado: {{ cve.published | format_date }}
+                        
+                        {% if cve.lastModified %}
+                        <span class="ms-3">
+                            <i class="fas fa-edit me-1"></i>
+                            Atualizado: {{ cve.lastModified | format_date }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Score e Severidade -->
+                {% if cve.metrics %}
+                    {% set score = cve.metrics | extract_cvss_score %}
+                    {% set severity = cve.metrics | extract_severity %}
+                    {% if score %}
+                    <div class="text-end">
+                        <div class="h2 mb-0">
+                            <span class="text-primary">{{ "%.1f"|format(score) }}</span>
+                            <small class="text-muted h5">/10.0</small>
+                        </div>
+                        {% if severity != "Não informado" %}
+                            {% if severity == "Crítica" %}
+                                <span class="badge bg-danger fs-6">{{ severity }}</span>
+                            {% elif severity == "Alta" %}
+                                <span class="badge bg-warning text-dark fs-6">{{ severity }}</span>
+                            {% elif severity == "Média" %}
+                                <span class="badge bg-info fs-6">{{ severity }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary fs-6">{{ severity }}</span>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Coluna Principal -->
+        <div class="col-lg-8">
+            <!-- Descrição -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Descrição
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Aviso sobre tradução automática -->
+                    <div class="alert alert-info alert-sm mb-3">
+                        <i class="fas fa-robot me-1"></i>
+                        <small><strong>Tradução Automática:</strong> Esta descrição foi traduzida automaticamente por máquina em tempo real.</small>
+                    </div>
+                    
+                    {% if cve.descriptions %}
+                        {% set description_found = namespace(value=false) %}
+                        {% for desc in cve.descriptions %}
+                            {% if desc.lang == 'en' and not description_found.value %}
+                                {% if desc.value_pt %}
+                                    <p class="mb-3">{{ desc.value_pt }}</p>
+                                    <div class="border-top pt-3">
+                                        <h6 class="text-muted">Descrição Original (Inglês):</h6>
+                                        <p class="mb-0 text-muted small">{{ desc.value }}</p>
+                                    </div>
+                                {% else %}
+                                    <p class="mb-0">{{ desc.value }}</p>
+                                    <small class="text-warning">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>
+                                        Tradução não disponível - exibindo versão original em inglês
+                                    </small>
+                                {% endif %}
+                                {% set description_found.value = true %}
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted mb-0">Descrição não disponível.</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Métricas CVSS -->
+            {% if cve.metrics %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Métricas CVSS
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% set vector = cve.metrics | extract_vector_string %}
+                    {% if vector %}
+                    <div class="row mb-3">
+                        <div class="col-sm-3"><strong>Vector String:</strong></div>
+                        <div class="col-sm-9">
+                            <code class="bg-light p-2 rounded d-inline-block">{{ vector }}</code>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Tabela de métricas detalhadas -->
+                    {% for version in ['cvssMetricV31', 'cvssMetricV30', 'cvssMetricV2'] %}
+                        {% if version in cve.metrics and cve.metrics[version] %}
+                            {% set metric = cve.metrics[version][0] %}
+                            {% if 'cvssData' in metric %}
+                                {% set cvss_data = metric.cvssData %}
+                                <h6 class="text-primary">CVSS {{ "3.1" if version == "cvssMetricV31" else ("3.0" if version == "cvssMetricV30" else "2.0") }}</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-striped">
+                                        <tbody>
+                                            {% if 'baseScore' in cvss_data %}
+                                            <tr>
+                                                <td><strong>Score Base</strong></td>
+                                                <td>{{ cvss_data.baseScore }}</td>
+                                            </tr>
+                                            {% endif %}
+                                            {% if 'baseSeverity' in cvss_data %}
+                                            <tr>
+                                                <td><strong>Severidade</strong></td>
+                                                <td>{{ cvss_data.baseSeverity | translate_severity }}</td>
+                                            </tr>
+                                            {% endif %}
+                                            {% if 'attackVector' in cvss_data %}
+                                            <tr>
+                                                <td><strong>Vetor de Ataque</strong></td>
+                                                <td>{{ cvss_data.attackVector | translate_cvss_metrics }}</td>
+                                            </tr>
+                                            {% endif %}
+                                            {% if 'attackComplexity' in cvss_data %}
+                                            <tr>
+                                                <td><strong>Complexidade</strong></td>
+                                                <td>{{ cvss_data.attackComplexity | translate_cvss_metrics }}</td>
+                                            </tr>
+                                            {% endif %}
+                                            {% if 'privilegesRequired' in cvss_data %}
+                                            <tr>
+                                                <td><strong>Privilégios Necessários</strong></td>
+                                                <td>{{ cvss_data.privilegesRequired | translate_cvss_metrics }}</td>
+                                            </tr>
+                                            {% endif %}
+                                            {% if 'userInteraction' in cvss_data %}
+                                            <tr>
+                                                <td><strong>Interação do Usuário</strong></td>
+                                                <td>{{ cvss_data.userInteraction | translate_cvss_metrics }}</td>
+                                            </tr>
+                                            {% endif %}
+                                            {% if 'scope' in cvss_data %}
+                                            <tr>
+                                                <td><strong>Escopo</strong></td>
+                                                <td>{{ cvss_data.scope | translate_cvss_metrics }}</td>
+                                            </tr>
+                                            {% endif %}
+                                            {% if 'confidentialityImpact' in cvss_data %}
+                                            <tr>
+                                                <td><strong>Impacto na Confidencialidade</strong></td>
+                                                <td>{{ cvss_data.confidentialityImpact | translate_cvss_metrics }}</td>
+                                            </tr>
+                                            {% endif %}
+                                            {% if 'integrityImpact' in cvss_data %}
+                                            <tr>
+                                                <td><strong>Impacto na Integridade</strong></td>
+                                                <td>{{ cvss_data.integrityImpact | translate_cvss_metrics }}</td>
+                                            </tr>
+                                            {% endif %}
+                                            {% if 'availabilityImpact' in cvss_data %}
+                                            <tr>
+                                                <td><strong>Impacto na Disponibilidade</strong></td>
+                                                <td>{{ cvss_data.availabilityImpact | translate_cvss_metrics }}</td>
+                                            </tr>
+                                            {% endif %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Configurações Afetadas -->
+            {% if cve.configurations %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cogs me-2"></i>Produtos Afetados
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for config in cve.configurations %}
+                        {% if config.nodes %}
+                            {% for node in config.nodes %}
+                                {% if node.cpeMatch %}
+                                    <div class="mb-3">
+                                        {% for match in node.cpeMatch %}
+                                            {% if match.criteria %}
+                                                {% set cpe_info = match.criteria | clean_cpe_name %}
+                                                {% if cpe_info %}
+                                                <div class="border rounded p-2 mb-2 bg-light">
+                                                    <div class="row">
+                                                        {% if cpe_info.vendor %}
+                                                        <div class="col-md-3">
+                                                            <strong>Fabricante:</strong><br>
+                                                            {{ cpe_info.vendor }}
+                                                        </div>
+                                                        {% endif %}
+                                                        {% if cpe_info.product %}
+                                                        <div class="col-md-3">
+                                                            <strong>Produto:</strong><br>
+                                                            {{ cpe_info.product }}
+                                                        </div>
+                                                        {% endif %}
+                                                        {% if cpe_info.version %}
+                                                        <div class="col-md-3">
+                                                            <strong>Versão:</strong><br>
+                                                            {{ cpe_info.version }}
+                                                        </div>
+                                                        {% endif %}
+                                                        <div class="col-md-3">
+                                                            <strong>Status:</strong><br>
+                                                            {% if match.vulnerable %}
+                                                            <span class="badge bg-danger">Vulnerável</span>
+                                                            {% else %}
+                                                            <span class="badge bg-success">Não Vulnerável</span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Referências -->
+            {% if cve.references %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-external-link-alt me-2"></i>Referências
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for ref in cve.references %}
+                        <div class="list-group-item border-0 px-0">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <a href="{{ ref.url }}" target="_blank" class="text-decoration-none">
+                                        {{ ref.url }}
+                                        <i class="fas fa-external-link-alt small ms-1"></i>
+                                    </a>
+                                    {% if ref.source %}
+                                    <div class="text-muted small">
+                                        Fonte: {{ ref.source }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="text-end">
+                                    {% if ref.tags %}
+                                        {% for tag in ref.tags %}
+                                        <span class="badge bg-secondary me-1">{{ tag }}</span>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Informações Rápidas -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info me-2"></i>Informações Rápidas
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless">
+                        <tr>
+                            <td><strong>CVE ID:</strong></td>
+                            <td>{{ cve.id }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Status:</strong></td>
+                            <td>
+                                {% if cve.vulnStatus %}
+                                <span class="badge bg-primary">{{ cve.vulnStatus | translate_cvss_metrics }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% if cve.sourceIdentifier %}
+                        <tr>
+                            <td><strong>Fonte:</strong></td>
+                            <td>{{ cve.sourceIdentifier }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <td><strong>Publicado:</strong></td>
+                            <td>{{ cve.published | format_date }}</td>
+                        </tr>
+                        {% if cve.lastModified %}
+                        <tr>
+                            <td><strong>Modificado:</strong></td>
+                            <td>{{ cve.lastModified | format_date }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+            
+            <!-- CWE/Fraquezas -->
+            {% if cve.weaknesses %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-bug me-2"></i>Tipos de Fraqueza (CWE)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% set unique_cwes = [] %}
+                    {% for weakness in cve.weaknesses %}
+                        {% for desc in weakness.description %}
+                            {% if desc.lang == 'en' and desc.value not in unique_cwes %}
+                                {% if unique_cwes.append(desc.value) %}{% endif %}
+                                <div class="mb-2">
+                                    <span class="badge bg-danger me-2">{{ desc.value }}</span>
+                                    <small class="text-muted">{{ desc.value | translate_cwe }}</small>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Ações -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h6 class="card-title">Compartilhar</h6>
+                    <div class="d-grid gap-2">
+                        <a href="https://nvd.nist.gov/vuln/detail/{{ cve.id }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-external-link-alt me-1"></i>Ver no NVD Original
+                        </a>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="copyToClipboard('{{ url_for('detalhes', cve_id=cve.id, _external=True) }}')">
+                            <i class="fas fa-copy me-1"></i>Copiar Link
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        // Mostrar feedback visual
+        const btn = event.target;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check me-1"></i>Copiado!';
+        btn.classList.add('btn-success');
+        btn.classList.remove('btn-outline-secondary');
+        
+        setTimeout(function() {
+            btn.innerHTML = originalText;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-secondary');
+        }, 2000);
+    });
+}
+</script>
+{% endblock %}

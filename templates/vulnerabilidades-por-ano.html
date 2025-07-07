@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Vulnerabilidades {{ year }} - BNVD{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-12">
+            <!-- Navegação -->
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Início</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('busca_por_ano') }}">Busca por Ano</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ year }}</li>
+                </ol>
+            </nav>
+            
+            <!-- Cabeçalho -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h5 class="mb-0">
+                                <i class="fas fa-calendar-alt me-2"></i>
+                                Vulnerabilidades de {{ year }}
+                            </h5>
+                        </div>
+                        <div class="col-auto">
+                            <span class="badge bg-light text-primary fs-6">
+                                {{ vulnerabilities|length }} vulnerabilidade(s)
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-0">
+                        Listagem completa de vulnerabilidades publicadas em {{ year }} armazenadas no banco de dados.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Lista de Vulnerabilidades -->
+            {% if vulnerabilities %}
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>CVE ID</th>
+                                    <th>Status</th>
+                                    <th>Data de Publicação</th>
+                                    <th>Última Modificação</th>
+                                    <th>Severidade</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for vuln in vulnerabilities %}
+                                <tr>
+                                    <td>
+                                        <strong class="text-primary">{{ vuln.cve_id }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if vuln.vulnStatus %}
+                                        <span class="badge bg-info">{{ vuln.vulnStatus|translate_status }}</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if vuln.published_date %}
+                                        {{ vuln.published_date.strftime('%d/%m/%Y') }}
+                                        {% else %}
+                                        N/A
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if vuln.last_modified %}
+                                        {{ vuln.last_modified.strftime('%d/%m/%Y') }}
+                                        {% else %}
+                                        N/A
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if vuln.cvss_metrics %}
+                                        {% set cvss_score = vuln.cvss_metrics|extract_cvss_score %}
+                                        {% set severity = vuln.cvss_metrics|extract_severity %}
+                                        {% if cvss_score %}
+                                        <span class="badge 
+                                            {% if severity == 'CRITICAL' %}bg-danger
+                                            {% elif severity == 'HIGH' %}bg-warning text-dark
+                                            {% elif severity == 'MEDIUM' %}bg-info
+                                            {% elif severity == 'LOW' %}bg-success
+                                            {% else %}bg-secondary
+                                            {% endif %}">
+                                            {{ cvss_score }} - {{ severity|translate_severity }}
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">N/A</span>
+                                        {% endif %}
+                                        {% else %}
+                                        <span class="badge bg-secondary">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('detalhes', cve_id=vuln.cve_id) }}" 
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye me-1"></i>
+                                            Ver Detalhes
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Nenhuma vulnerabilidade encontrada para o ano {{ year }}.
+                    </div>
+                    <a href="{{ url_for('busca_por_ano') }}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Voltar para Busca por Ano
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,423 @@
+{% extends "base.html" %}
+
+{% block title %}Política de Divulgação Responsável - BNVD{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-5">
+                <h1 class="display-4 fw-bold text-primary mb-3">
+                    <i class="fas fa-file-contract me-3"></i>
+                    Política de Divulgação Responsável
+                </h1>
+                <p class="lead text-muted">
+                    Diretrizes para divulgação responsável de vulnerabilidades de segurança
+                </p>
+            </div>
+
+            <!-- Introdução -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h3 class="card-title text-primary mb-3">
+                        <i class="fas fa-info-circle me-2"></i>Introdução
+                    </h3>
+                    <p class="card-text">
+                        A divulgação responsável de vulnerabilidades é um princípio fundamental para 
+                        manter a segurança da informação e proteger usuários e organizações. Esta 
+                        política estabelece as diretrizes que o BNVD segue e recomenda para 
+                        a comunidade de segurança cibernética brasileira.
+                    </p>
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        <strong>Importante:</strong> O BNVD é um banco de dados que consolida 
+                        informações já públicas da NVD. Não descobrimos ou divulgamos novas vulnerabilidades.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Princípios -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h3 class="card-title text-success mb-3">
+                        <i class="fas fa-balance-scale me-2"></i>Princípios Fundamentais
+                    </h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="text-primary">1. Coordenação</h5>
+                            <p>
+                                Vulnerabilidades devem ser relatadas primeiro aos fornecedores 
+                                responsáveis, dando-lhes oportunidade de desenvolver e distribuir 
+                                patches antes da divulgação pública.
+                            </p>
+
+                            <h5 class="text-primary">2. Tempo Adequado</h5>
+                            <p>
+                                Fornecedores devem ter tempo razoável (tipicamente 90 dias) 
+                                para desenvolver e lançar correções antes da divulgação pública.
+                            </p>
+
+                            <h5 class="text-primary">3. Proporcionalidade</h5>
+                            <p>
+                                O nível de detalhamento da divulgação deve ser proporcional 
+                                ao risco e ao tempo disponível para correção.
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="text-primary">4. Transparência</h5>
+                            <p>
+                                Processos de divulgação devem ser transparentes e documentados, 
+                                permitindo que a comunidade aprenda e melhore.
+                            </p>
+
+                            <h5 class="text-primary">5. Proteção ao Usuário</h5>
+                            <p>
+                                A proteção dos usuários finais deve ser a prioridade máxima 
+                                em qualquer processo de divulgação.
+                            </p>
+
+                            <h5 class="text-primary">6. Educação</h5>
+                            <p>
+                                Divulgações devem incluir informações educacionais para 
+                                ajudar a comunidade a entender e mitigar riscos.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Processo Recomendado -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h3 class="card-title text-warning mb-3">
+                        <i class="fas fa-cogs me-2"></i>Processo Recomendado de Divulgação
+                    </h3>
+                    
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h5>Dia 0: Descoberta</h5>
+                                <p>Vulnerabilidade é descoberta e verificada pelo pesquisador.</p>
+                                <ul>
+                                    <li>Documentar a vulnerabilidade detalhadamente</li>
+                                    <li>Criar proof-of-concept (quando necessário)</li>
+                                    <li>Avaliar impacto e severidade</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-info"></div>
+                            <div class="timeline-content">
+                                <h5>Dia 1-7: Contato Inicial</h5>
+                                <p>Contatar o fornecedor responsável através de canais apropriados.</p>
+                                <ul>
+                                    <li>Usar canais oficiais de reporte de vulnerabilidades</li>
+                                    <li>Fornecer informações básicas sem detalhes críticos</li>
+                                    <li>Estabelecer linha de comunicação segura</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-warning"></div>
+                            <div class="timeline-content">
+                                <h5>Dia 7-14: Relatório Detalhado</h5>
+                                <p>Enviar relatório técnico completo após confirmação de recebimento.</p>
+                                <ul>
+                                    <li>Incluir steps de reprodução</li>
+                                    <li>Fornecer proof-of-concept quando apropriado</li>
+                                    <li>Sugerir possíveis mitigações</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-success"></div>
+                            <div class="timeline-content">
+                                <h5>Dia 90: Divulgação Pública</h5>
+                                <p>Divulgação pública coordenada (se patch estiver disponível).</p>
+                                <ul>
+                                    <li>Publicar advisory com detalhes apropriados</li>
+                                    <li>Incluir informações de mitigação</li>
+                                    <li>Reconhecer colaboração do fornecedor</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Diretrizes Específicas -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h3 class="card-title text-danger mb-3">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Diretrizes Específicas
+                    </h3>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="text-success">✅ O que Fazer</h5>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    Sempre contactar o fornecedor primeiro
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    Usar canais de comunicação seguros
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    Dar tempo adequado para correção
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    Incluir informações de mitigação
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    Documentar todo o processo
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    Seguir leis locais e internacionais
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="text-danger">❌ O que Não Fazer</h5>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-times-circle text-danger me-2"></i>
+                                    Divulgar publicamente sem contato prévio
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-times-circle text-danger me-2"></i>
+                                    Explorar vulnerabilidades maliciosamente
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-times-circle text-danger me-2"></i>
+                                    Acessar dados não autorizados
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-times-circle text-danger me-2"></i>
+                                    Ameaçar ou chantagear fornecedores
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-times-circle text-danger me-2"></i>
+                                    Vender informações de vulnerabilidades
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-times-circle text-danger me-2"></i>
+                                    Ignorar solicitações legítimas de confidencialidade
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Casos Especiais -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h3 class="card-title text-info mb-3">
+                        <i class="fas fa-special me-2"></i>Casos Especiais
+                    </h3>
+                    
+                    <div class="accordion" id="casosEspeciais">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#exploit-ativo">
+                                    <i class="fas fa-fire text-danger me-2"></i>
+                                    Exploração Ativa na Natureza
+                                </button>
+                            </h2>
+                            <div id="exploit-ativo" class="accordion-collapse collapse show" 
+                                 data-bs-parent="#casosEspeciais">
+                                <div class="accordion-body">
+                                    <p>
+                                        Quando uma vulnerabilidade já está sendo explorada ativamente, 
+                                        a timeline pode ser acelerada para proteger usuários.
+                                    </p>
+                                    <ul>
+                                        <li>Contactar fornecedor imediatamente</li>
+                                        <li>Considerar divulgação limitada após 7-14 dias</li>
+                                        <li>Focar em informações de mitigação</li>
+                                        <li>Coordenar com CERTs nacionais</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#fornecedor-irresponsivo">
+                                    <i class="fas fa-clock text-warning me-2"></i>
+                                    Fornecedor Não Responsivo
+                                </button>
+                            </h2>
+                            <div id="fornecedor-irresponsivo" class="accordion-collapse collapse" 
+                                 data-bs-parent="#casosEspeciais">
+                                <div class="accordion-body">
+                                    <p>
+                                        Quando o fornecedor não responde após múltiplas tentativas de contato:
+                                    </p>
+                                    <ul>
+                                        <li>Tentar múltiplos canais de comunicação</li>
+                                        <li>Contactar CERTs ou organizações intermediárias</li>
+                                        <li>Documentar todas as tentativas de contato</li>
+                                        <li>Considerar divulgação após 90 dias</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#infraestrutura-critica">
+                                    <i class="fas fa-shield-alt text-primary me-2"></i>
+                                    Infraestrutura Crítica
+                                </button>
+                            </h2>
+                            <div id="infraestrutura-critica" class="accordion-collapse collapse" 
+                                 data-bs-parent="#casosEspeciais">
+                                <div class="accordion-body">
+                                    <p>
+                                        Vulnerabilidades em infraestrutura crítica requerem cuidado especial:
+                                    </p>
+                                    <ul>
+                                        <li>Contactar autoridades nacionais competentes</li>
+                                        <li>Usar canais governamentais quando apropriado</li>
+                                        <li>Considerar impacto nacional e regional</li>
+                                        <li>Coordenar com múltiplos stakeholders</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recursos e Contatos -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h3 class="card-title text-secondary mb-3">
+                        <i class="fas fa-links me-2"></i>Recursos e Contatos Importantes
+                    </h3>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Organizações Brasileiras</h5>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-external-link-alt me-2"></i>
+                                    <a href="https://www.cert.br/" target="_blank">CERT.br</a>
+                                    - Centro de Estudos, Resposta e Tratamento de Incidentes
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-external-link-alt me-2"></i>
+                                    <a href="https://www.gov.br/gsi/pt-br" target="_blank">GSI/PR</a>
+                                    - Gabinete de Segurança Institucional
+                                </li>
+                            </ul>
+
+                            <h5 class="mt-4">Organizações Internacionais</h5>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-external-link-alt me-2"></i>
+                                    <a href="https://cve.mitre.org/" target="_blank">MITRE CVE</a>
+                                    - CVE Program
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-external-link-alt me-2"></i>
+                                    <a href="https://nvd.nist.gov/" target="_blank">NVD</a>
+                                    - National Vulnerability Database
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Coordenação de Divulgação</h5>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-external-link-alt me-2"></i>
+                                    <a href="https://www.first.org/" target="_blank">FIRST</a>
+                                    - Forum of Incident Response and Security Teams
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-external-link-alt me-2"></i>
+                                    <a href="https://disclose.io/" target="_blank">Disclose.io</a>
+                                    - Industry Standard for Coordinated Disclosure
+                                </li>
+                            </ul>
+
+                            <div class="alert alert-primary mt-4" role="alert">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-envelope me-2"></i>Contato BNVD
+                                </h6>
+                                <p class="mb-0">
+                                    Para questões relacionadas a esta política ou ao BNVD, 
+                                    entre em contato através da nossa 
+                                    <a href="{{ url_for('sobre') }}" class="alert-link">página sobre</a>.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -22px;
+    top: 5px;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px #dee2e6;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid #0d6efd;
+}
+
+.timeline-content h5 {
+    margin-bottom: 10px;
+    color: #0d6efd;
+}
+</style>
+{% endblock %}

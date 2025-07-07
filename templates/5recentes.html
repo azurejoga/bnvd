@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}5 Vulnerabilidades Mais Recentes - BNVD{% endblock %}
+
+{% block description %}Consulte as 5 vulnerabilidades de segurança mais recentes descobertas nos últimos 7 dias, traduzidas para português pelo BNVD.{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h1 class="display-6 fw-bold text-primary mb-2">
+                        <i class="fas fa-clock text-warning me-3"></i>
+                        5 Vulnerabilidades Mais Recentes
+                    </h1>
+                    <p class="lead text-muted mb-0">
+                        As 5 vulnerabilidades de segurança mais recentes dos últimos 7 dias
+                    </p>
+                </div>
+                <div class="text-end">
+                    <a href="{{ url_for('recentes') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-list me-2"></i>Ver Todas as Recentes
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vulnerabilities List -->
+    {% if vulnerabilidades %}
+        <div class="row">
+            {% for vuln in vulnerabilidades %}
+                {% set cve_data = vuln.cve %}
+                {% set cve_id = cve_data.id %}
+                {% set metrics = cve_data.get('metrics', {}) %}
+                {% set cvss_score = metrics | extract_cvss_score %}
+                {% set severity = metrics | extract_severity %}
+                
+                <div class="col-12 mb-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body p-4">
+                            <div class="row align-items-start">
+                                <!-- CVE ID and Basic Info -->
+                                <div class="col-md-8">
+                                    <h5 class="card-title mb-2">
+                                        <a href="{{ url_for('detalhes', cve_id=cve_id) }}" 
+                                           class="text-decoration-none text-primary fw-bold">
+                                            {{ cve_id }}
+                                        </a>
+                                    </h5>
+                                    
+                                    <!-- Severity Badge -->
+                                    {% if cvss_score %}
+                                        {% if severity == 'Crítica' %}
+                                            {% set badge_class = 'danger' %}
+                                        {% elif severity == 'Alta' %}
+                                            {% set badge_class = 'warning' %}
+                                        {% elif severity == 'Média' %}
+                                            {% set badge_class = 'info' %}
+                                        {% else %}
+                                            {% set badge_class = 'secondary' %}
+                                        {% endif %}
+                                        <span class="badge bg-{{ badge_class }} mb-2">{{ severity }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary mb-2">Não Informado</span>
+                                    {% endif %}
+                                    
+                                    <!-- Publication Date -->
+                                    {% if cve_data.get('published') %}
+                                        <div class="text-muted mb-2">
+                                            <i class="fas fa-calendar-alt me-1"></i>
+                                            {{ cve_data.published | format_date }}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- Description -->
+                                    {% if cve_data.descriptions %}
+                                        {% set description_found = namespace(value=false) %}
+                                        {% for desc in cve_data.descriptions %}
+                                            {% if desc.lang == 'en' and not description_found.value %}
+                                                <p class="card-text text-muted">
+                                                    {% if desc.value_pt and desc.value_pt.strip() and desc.value_pt != desc.value %}
+                                                        {{ desc.value_pt[:200] }}{% if desc.value_pt|length > 200 %}...{% endif %}
+                                                    {% elif desc.value and desc.value.strip() %}
+                                                        {{ desc.value[:200] }}{% if desc.value|length > 200 %}...{% endif %}
+                                                    {% else %}
+                                                        <em class="text-muted">Descrição não disponível</em>
+                                                    {% endif %}
+                                                </p>
+                                                {% set description_found.value = true %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- CVSS Score and Action -->
+                                <div class="col-md-4 text-md-end">
+                                    {% if cvss_score %}
+                                        <div class="mb-2">
+                                            <span class="text-muted">CVSS:</span>
+                                            <span class="fw-bold text-{{ badge_class }} fs-5">{{ "%.1f" | format(cvss_score) }}</span>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <a href="{{ url_for('detalhes', cve_id=cve_id) }}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        Detalhes
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <!-- No Results -->
+        <div class="row">
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-exclamation-circle text-warning" style="font-size: 4rem;"></i>
+                    </div>
+                    <h3 class="text-muted mb-3">Nenhuma Vulnerabilidade Recente</h3>
+                    <p class="text-muted mb-4">
+                        Não foram encontradas vulnerabilidades recentes nos últimos 7 dias.
+                    </p>
+                    <a href="{{ url_for('busca') }}" class="btn btn-primary">
+                        <i class="fas fa-search me-2"></i>Fazer Nova Busca
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Action Buttons -->
+    <div class="row mt-5">
+        <div class="col-12 text-center">
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                <a href="{{ url_for('recentes') }}" class="btn btn-primary">
+                    <i class="fas fa-list me-2"></i>Ver Todas as Vulnerabilidades Recentes
+                </a>
+                <a href="{{ url_for('busca') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-search me-2"></i>Busca Avançada
+                </a>
+                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-home me-2"></i>Voltar ao Início
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Auto-refresh every 5 minutes -->
+<script>
+    // Auto-refresh page every 5 minutes to keep content fresh
+    setTimeout(function() {
+        window.location.reload();
+    }, 300000); // 5 minutes = 300,000 milliseconds
+</script>
+{% endblock %}

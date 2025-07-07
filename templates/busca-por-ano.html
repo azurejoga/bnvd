@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Busca por Ano - BNVD{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        Vulnerabilidades por Ano
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        Explore vulnerabilidades organizadas por ano de publicação no banco de dados do BNVD.
+                    </p>
+                    
+                    <div class="row">
+                        {% for year_data in years_data %}
+                        <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+                            <div class="card h-100 border-primary">
+                                <div class="card-body text-center">
+                                    <h3 class="card-title text-primary">{{ year_data.year }}</h3>
+                                    <p class="card-text">
+                                        <strong>{{ year_data.count }}</strong> 
+                                        {% if year_data.count == 1 %}
+                                            vulnerabilidade
+                                        {% else %}
+                                            vulnerabilidades
+                                        {% endif %}
+                                    </p>
+                                    <a href="{{ url_for('vulnerabilidades_por_ano', year=year_data.year) }}" 
+                                       class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-search me-1"></i>
+                                        Ver Vulnerabilidades
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        {% if not years_data %}
+                        <div class="col-12">
+                            <div class="alert alert-info text-center">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Nenhuma vulnerabilidade encontrada no banco de dados.
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Estatísticas gerais -->
+    <div class="row mt-4">
+        <div class="col-lg-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Estatísticas Gerais
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="stat-item">
+                                <h3 class="text-primary">{{ total_vulnerabilities }}</h3>
+                                <p class="text-muted">Total de Vulnerabilidades</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-item">
+                                <h3 class="text-success">{{ total_years }}</h3>
+                                <p class="text-muted">Anos Cobertos</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-item">
+                                <h3 class="text-warning">{{ total_translations }}</h3>
+                                <p class="text-muted">Traduções Armazenadas</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

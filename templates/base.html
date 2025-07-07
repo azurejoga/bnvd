@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- SEO Meta Tags -->
+    <title>{% block title %}Banco Nacional de Vulnerabilidades Cibernéticas (BNVD) - A fonte confiável de vulnerabilidades no Brasil{% endblock %}</title>
+    <meta name="description" content="{% block description %}A fonte confiável de vulnerabilidades de segurança cibernética no Brasil. Informações atualizadas do NVD traduzidas para português.{% endblock %}">
+    <meta name="keywords" content="{% block keywords %}vulnerabilidades, segurança cibernética, CVE, Brasil, BNVD, NVD, português, vulnerabilidade de segurança{% endblock %}">
+    <meta name="author" content="Juan Mathews Rebello Santos">
+    <meta name="copyright" content="© 2025 Banco Nacional de Vulnerabilidades (BNVD)">
+    <meta name="robots" content="{% block robots %}index, follow{% endblock %}">
+    <meta name="language" content="pt-BR">
+    <meta name="geo.region" content="BR">
+    <meta name="geo.country" content="Brasil">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="{% block canonical %}{{ request.url }}{% endblock %}">
+    
+    <!-- Theme Colors -->
+    <meta name="theme-color" content="#0d6efd">
+    <meta name="msapplication-TileColor" content="#0d6efd">
+    
+    <!-- Apple Touch Icons -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="BNVD">
+    
+    <!-- Open Graph (Facebook) -->
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:title" content="{% block og_title %}{{ self.title() }}{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}{{ self.description() }}{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{{ url_for('static', filename='images/bnvd-logo.png', _external=True) }}{% endblock %}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="Banco Nacional de Vulnerabilidades Cibernéticas (BNVD)">
+    <meta property="og:locale" content="pt_BR">
+    
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="{{ request.url }}">
+    <meta name="twitter:title" content="{{ self.title() }}">
+    <meta name="twitter:description" content="{{ self.description() }}">
+    <meta name="twitter:image" content="{{ url_for('static', filename='images/bnvd-logo.png', _external=True) }}">
+    <meta name="twitter:creator" content="@bnvd_brasil">
+    <meta name="twitter:site" content="@bnvd_brasil">
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Banco Nacional de Vulnerabilidades Cibernéticas (BNVD)",
+        "description": "A fonte confiável de vulnerabilidades de segurança cibernética no Brasil",
+        "url": "{{ url_for('index', _external=True) }}",
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": "{{ url_for('busca', _external=True) }}?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "Banco Nacional de Vulnerabilidades Cibernéticas (BNVD)",
+            "url": "{{ url_for('index', _external=True) }}"
+        }
+    }
+    </script>
+    
+    {% block structured_data %}{% endblock %}
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top" style="background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);">
+        <div class="container">
+            <a class="navbar-brand fw-bold d-flex align-items-center" href="{{ url_for('index') }}">
+                <i class="fas fa-shield-alt me-2 fa-lg"></i>
+                <span>Banco nacional de vulnerabilidades (BNVD)</span>
+            </a>
+            
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto ms-lg-4">
+                    <li class="nav-item">
+                        <a class="nav-link rounded px-3 mx-1" href="{{ url_for('index') }}">
+                            <i class="fas fa-home me-2"></i>Início
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link rounded px-3 mx-1" href="{{ url_for('busca') }}">
+                            <i class="fas fa-search me-2"></i>Buscar
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link rounded px-3 mx-1" href="{{ url_for('recentes') }}">
+                            <i class="fas fa-clock me-2"></i>Recentes
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link rounded px-3 mx-1" href="{{ url_for('busca_por_ano') }}">
+                            <i class="fas fa-calendar-alt me-2"></i>Buscar por Ano
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle rounded px-3 mx-1" href="#" id="infoDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-info-circle me-2"></i>Informações
+                        </a>
+                        <ul class="dropdown-menu border-0 shadow">
+                            <li><a class="dropdown-item" href="{{ url_for('sobre') }}">
+                                <i class="fas fa-info-circle me-2 text-primary"></i>Sobre o Projeto
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('politica') }}">
+                                <i class="fas fa-file-alt me-2 text-success"></i>Política de Divulgação
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('api_docs') }}">
+                                <i class="fas fa-code me-2 text-info"></i>API Documentation
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="mailto:contato@bnvd.org">
+                                <i class="fas fa-envelope me-2 text-warning"></i>Contato
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+                
+                <!-- Flag brasileira com efeito -->
+                <div class="navbar-text d-flex align-items-center">
+                    <div class="d-flex align-items-center bg-white bg-opacity-20 rounded px-3 py-1">
+                        <i class="fas fa-flag me-1" style="color: #009C3B;"></i>
+                        <i class="fas fa-circle me-1" style="color: #FFD700; font-size: 0.6rem;"></i>
+                        <i class="fas fa-circle" style="color: #012169; font-size: 0.6rem;"></i>
+                        <small class="ms-2 text-white fw-semibold">Brasil</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Alerts -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gradient text-light py-5 mt-5" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6 mb-4 mb-lg-0">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-shield-alt fa-2x text-primary me-3"></i>
+                        <div>
+                            <h5 class="mb-1">Banco nacional de vulnerabilidades (BNVD)</h5>
+                            <p class="mb-0 text-light opacity-75">A fonte confiável de vulnerabilidades no Brasil</p>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center text-light opacity-75">
+                        <i class="fas fa-database me-2"></i>
+                        <small>
+                            Dados fornecidos pela 
+                            <a href="https://nvd.nist.gov/" target="_blank" rel="noopener noreferrer" class="text-primary text-decoration-none">
+                                National Vulnerability Database (NVD)
+                            </a>
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6">
+                    <div class="text-lg-end">
+                        <div class="mb-3">
+                            <small class="text-light opacity-50 d-block mb-3">
+                                © 2025 Banco nacional de vulnerabilidades (BNVD) - Todos os direitos reservados
+                            </small>
+                            
+                            <div class="d-flex justify-content-lg-end align-items-center mb-2">
+                                <i class="fas fa-heart text-danger me-2"></i>
+                                <span class="text-light">Feito com 🩵 por</span>
+                            </div>
+                            <h6 class="text-primary mb-2">Juan Mathews Rebello Santos</h6>
+                            <div class="d-flex justify-content-lg-end gap-2">
+                                <a href="https://github.com/azurejoga/bnvd/" target="_blank" rel="noopener noreferrer"
+                                   class="btn btn-outline-light btn-sm">
+                                    <i class="fab fa-github me-1"></i>GitHub do projeto
+                                </a>
+                                <a href="https://linkedin.com/in/juan-mathews-rebello-santos-/" target="_blank" rel="noopener noreferrer"
+                                   class="btn btn-primary btn-sm">
+                                    <i class="fab fa-linkedin me-1"></i>LinkedIn
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,377 @@
+{% extends "base.html" %}
+
+{% block title %}BNVD API v1 - Documentação{% endblock %}
+
+{% block meta_description %}Documentação completa da BNVD API v1 - Acesso programático ao Banco Nacional de Vulnerabilidades Cibernéticas{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="mb-4">
+                <i class="fas fa-code"></i>
+                BNVD API v1 - Documentação
+            </h1>
+            
+            <div class="alert alert-info">
+                <h5><i class="fas fa-info-circle"></i> Sobre a API</h5>
+                <p class="mb-0">A BNVD API v1 é uma API REST que fornece acesso programático ao Banco Nacional de Vulnerabilidades Cibernéticas. Permite consultar vulnerabilidades de segurança, buscar por critérios específicos e obter estatísticas do banco de dados.</p>
+            </div>
+
+            <!-- Base URL -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3><i class="fas fa-link"></i> Base URL</h3>
+                </div>
+                <div class="card-body">
+                    <code class="d-block p-3 bg-light border rounded">{{ request.url_root }}api/v1</code>
+                </div>
+            </div>
+
+            <!-- Endpoints -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3><i class="fas fa-list"></i> Endpoints Principais</h3>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Documentação da API -->
+                    <div class="mb-4">
+                        <h5 class="text-primary">
+                            <span class="badge badge-success">GET</span>
+                            /api/v1/
+                        </h5>
+                        <p>Retorna informações sobre a API e endpoints disponíveis.</p>
+                        <button class="btn btn-sm btn-outline-primary" onclick="testEndpoint('/api/v1/')">
+                            <i class="fas fa-play"></i> Testar
+                        </button>
+                    </div>
+
+                    <!-- Listar Vulnerabilidades -->
+                    <div class="mb-4">
+                        <h5 class="text-primary">
+                            <span class="badge badge-success">GET</span>
+                            /api/v1/vulnerabilities
+                        </h5>
+                        <p>Lista todas as vulnerabilidades com suporte a paginação e filtros.</p>
+                        <p><strong>Parâmetros:</strong></p>
+                        <ul>
+                            <li><code>page</code> (int): Número da página (padrão: 1)</li>
+                            <li><code>per_page</code> (int): Resultados por página (padrão: 20, máximo: 100)</li>
+                            <li><code>year</code> (int): Filtrar por ano específico</li>
+                            <li><code>severity</code> (string): Filtrar por severidade CVSS</li>
+                            <li><code>vendor</code> (string): Filtrar por vendor/fabricante</li>
+                            <li><code>include_pt</code> (boolean): Incluir traduções em português</li>
+                        </ul>
+                        <button class="btn btn-sm btn-outline-primary" onclick="testEndpoint('/api/v1/vulnerabilities?per_page=5')">
+                            <i class="fas fa-play"></i> Testar
+                        </button>
+                    </div>
+
+                    <!-- Buscar CVE específico -->
+                    <div class="mb-4">
+                        <h5 class="text-primary">
+                            <span class="badge badge-success">GET</span>
+                            /api/v1/vulnerabilities/&lt;cve_id&gt;
+                        </h5>
+                        <p>Busca uma vulnerabilidade específica pelo CVE ID.</p>
+                        <div class="input-group mb-2">
+                            <input type="text" class="form-control" id="cveInput" placeholder="Ex: CVE-2024-12345">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-primary" onclick="testCveEndpoint()">
+                                    <i class="fas fa-play"></i> Testar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vulnerabilidades Recentes -->
+                    <div class="mb-4">
+                        <h5 class="text-primary">
+                            <span class="badge badge-success">GET</span>
+                            /api/v1/search/recent
+                        </h5>
+                        <p>Busca vulnerabilidades publicadas nos últimos dias.</p>
+                        <p><strong>Parâmetros:</strong> <code>days</code>, <code>page</code>, <code>per_page</code></p>
+                        <button class="btn btn-sm btn-outline-primary" onclick="testEndpoint('/api/v1/search/recent?per_page=5')">
+                            <i class="fas fa-play"></i> Testar
+                        </button>
+                    </div>
+
+                    <!-- 5 Mais Recentes -->
+                    <div class="mb-4">
+                        <h5 class="text-primary">
+                            <span class="badge badge-success">GET</span>
+                            /api/v1/search/recent/5
+                        </h5>
+                        <p>Retorna as 5 vulnerabilidades mais recentes.</p>
+                        <button class="btn btn-sm btn-outline-primary" onclick="testEndpoint('/api/v1/search/recent/5')">
+                            <i class="fas fa-play"></i> Testar
+                        </button>
+                    </div>
+
+                    <!-- Buscar por Ano -->
+                    <div class="mb-4">
+                        <h5 class="text-primary">
+                            <span class="badge badge-success">GET</span>
+                            /api/v1/search/year/&lt;year&gt;
+                        </h5>
+                        <p>Busca vulnerabilidades de um ano específico.</p>
+                        <div class="input-group mb-2">
+                            <input type="number" class="form-control" id="yearInput" placeholder="Ex: 2024" min="1999" max="2025">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-primary" onclick="testYearEndpoint()">
+                                    <i class="fas fa-play"></i> Testar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Buscar por Severidade -->
+                    <div class="mb-4">
+                        <h5 class="text-primary">
+                            <span class="badge badge-success">GET</span>
+                            /api/v1/search/severity/&lt;severity&gt;
+                        </h5>
+                        <p>Busca vulnerabilidades por severidade CVSS.</p>
+                        <p><strong>Severidades:</strong> LOW, MEDIUM, HIGH, CRITICAL</p>
+                        <div class="btn-group mb-2" role="group">
+                            <button class="btn btn-sm btn-outline-success" onclick="testEndpoint('/api/v1/search/severity/LOW?per_page=5')">LOW</button>
+                            <button class="btn btn-sm btn-outline-warning" onclick="testEndpoint('/api/v1/search/severity/MEDIUM?per_page=5')">MEDIUM</button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="testEndpoint('/api/v1/search/severity/HIGH?per_page=5')">HIGH</button>
+                            <button class="btn btn-sm btn-danger" onclick="testEndpoint('/api/v1/search/severity/CRITICAL?per_page=5')">CRITICAL</button>
+                        </div>
+                    </div>
+
+                    <!-- Buscar por Vendor -->
+                    <div class="mb-4">
+                        <h5 class="text-primary">
+                            <span class="badge badge-success">GET</span>
+                            /api/v1/search/vendor/&lt;vendor&gt;
+                        </h5>
+                        <p>Busca vulnerabilidades por vendor/fabricante.</p>
+                        <div class="input-group mb-2">
+                            <input type="text" class="form-control" id="vendorInput" placeholder="Ex: microsoft, google, apache">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-primary" onclick="testVendorEndpoint()">
+                                    <i class="fas fa-play"></i> Testar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Estatísticas -->
+                    <div class="mb-4">
+                        <h5 class="text-primary">
+                            <span class="badge badge-success">GET</span>
+                            /api/v1/stats
+                        </h5>
+                        <p>Retorna estatísticas gerais do banco de dados.</p>
+                        <button class="btn btn-sm btn-outline-primary" onclick="testEndpoint('/api/v1/stats')">
+                            <i class="fas fa-play"></i> Testar
+                        </button>
+                    </div>
+
+                    <!-- Estatísticas por Ano -->
+                    <div class="mb-4">
+                        <h5 class="text-primary">
+                            <span class="badge badge-success">GET</span>
+                            /api/v1/stats/years
+                        </h5>
+                        <p>Retorna estatísticas detalhadas por ano.</p>
+                        <button class="btn btn-sm btn-outline-primary" onclick="testEndpoint('/api/v1/stats/years')">
+                            <i class="fas fa-play"></i> Testar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formato de Resposta -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3><i class="fas fa-code"></i> Formato de Resposta</h3>
+                </div>
+                <div class="card-body">
+                    <h5>Resposta de Sucesso</h5>
+                    <pre><code>{
+  "status": "success",
+  "data": [...],
+  "pagination": {
+    "page": 1,
+    "per_page": 20,
+    "total": 100,
+    "pages": 5,
+    "has_next": true,
+    "has_prev": false
+  }
+}</code></pre>
+
+                    <h5 class="mt-4">Resposta de Erro</h5>
+                    <pre><code>{
+  "status": "error",
+  "message": "Descrição do erro",
+  "code": 400
+}</code></pre>
+                </div>
+            </div>
+
+            <!-- Teste Interativo -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3><i class="fas fa-terminal"></i> Teste Interativo</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="apiTestUrl">URL da API:</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">{{ request.url_root }}</span>
+                            </div>
+                            <input type="text" class="form-control" id="apiTestUrl" value="api/v1/" placeholder="api/v1/endpoint">
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" onclick="testCustomEndpoint()">
+                                    <i class="fas fa-play"></i> Executar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h5>Resposta:</h5>
+                    <pre id="apiResponse" class="bg-light p-3 border rounded" style="min-height: 200px;">Clique em "Executar" para ver a resposta da API...</pre>
+                </div>
+            </div>
+
+            <!-- Exemplos de Integração -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3><i class="fas fa-code-branch"></i> Exemplos de Integração</h3>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Python -->
+                    <h5>Python</h5>
+                    <pre><code>import requests
+
+def get_recent_vulnerabilities():
+    response = requests.get('{{ request.url_root }}api/v1/search/recent')
+    if response.status_code == 200:
+        data = response.json()
+        return data['data']
+    return None
+
+# Buscar por CVE específico
+def get_vulnerability(cve_id):
+    response = requests.get(f'{{ request.url_root }}api/v1/vulnerabilities/{cve_id}')
+    return response.json() if response.status_code == 200 else None
+</code></pre>
+
+                    <!-- JavaScript -->
+                    <h5 class="mt-4">JavaScript</h5>
+                    <pre><code>// Buscar vulnerabilidades recentes
+async function getRecentVulnerabilities() {
+    try {
+        const response = await fetch('{{ request.url_root }}api/v1/search/recent');
+        const data = await response.json();
+        return data.status === 'success' ? data.data : null;
+    } catch (error) {
+        console.error('Erro:', error);
+        return null;
+    }
+}
+
+// Buscar estatísticas
+async function getStatistics() {
+    const response = await fetch('{{ request.url_root }}api/v1/stats');
+    return await response.json();
+}
+</code></pre>
+
+                    <!-- cURL -->
+                    <h5 class="mt-4">cURL</h5>
+                    <pre><code># Listar vulnerabilidades
+curl "{{ request.url_root }}api/v1/vulnerabilities?per_page=10"
+
+# Buscar por severidade
+curl "{{ request.url_root }}api/v1/search/severity/CRITICAL"
+
+# Obter estatísticas
+curl "{{ request.url_root }}api/v1/stats"
+</code></pre>
+                </div>
+            </div>
+
+            <!-- Códigos de Status -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3><i class="fas fa-info"></i> Códigos de Status HTTP</h3>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><span class="badge badge-success">200</span> <strong>OK</strong> - Sucesso</li>
+                        <li><span class="badge badge-warning">400</span> <strong>Bad Request</strong> - Parâmetros inválidos</li>
+                        <li><span class="badge badge-danger">404</span> <strong>Not Found</strong> - Recurso não encontrado</li>
+                        <li><span class="badge badge-dark">500</span> <strong>Internal Server Error</strong> - Erro interno do servidor</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function testEndpoint(endpoint) {
+    const url = `{{ request.url_root }}${endpoint}`;
+    testUrl(url);
+}
+
+function testCveEndpoint() {
+    const cveId = document.getElementById('cveInput').value.trim();
+    if (!cveId) {
+        alert('Por favor, insira um CVE ID válido');
+        return;
+    }
+    testEndpoint(`api/v1/vulnerabilities/${cveId}`);
+}
+
+function testYearEndpoint() {
+    const year = document.getElementById('yearInput').value.trim();
+    if (!year || year < 1999 || year > 2025) {
+        alert('Por favor, insira um ano válido (1999-2025)');
+        return;
+    }
+    testEndpoint(`api/v1/search/year/${year}?per_page=5`);
+}
+
+function testVendorEndpoint() {
+    const vendor = document.getElementById('vendorInput').value.trim();
+    if (!vendor) {
+        alert('Por favor, insira um vendor/fabricante');
+        return;
+    }
+    testEndpoint(`api/v1/search/vendor/${encodeURIComponent(vendor)}?per_page=5`);
+}
+
+function testCustomEndpoint() {
+    const endpoint = document.getElementById('apiTestUrl').value.trim();
+    if (!endpoint) {
+        alert('Por favor, insira um endpoint válido');
+        return;
+    }
+    testEndpoint(endpoint);
+}
+
+function testUrl(url) {
+    const responseDiv = document.getElementById('apiResponse');
+    responseDiv.textContent = 'Carregando...';
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            responseDiv.textContent = JSON.stringify(data, null, 2);
+        })
+        .catch(error => {
+            responseDiv.textContent = `Erro: ${error.message}`;
+        });
+}
+</script>
+{% endblock %}

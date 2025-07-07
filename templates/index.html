@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}BNVD - Banco Nacional de Vulnerabilidades Cibernéticas{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center min-vh-75">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold text-white mb-4">
+                    <i class="fas fa-shield-alt text-warning me-3"></i>
+                    BNVD
+                </h1>
+                <p class="lead text-white mb-4">
+                    O primeiro Banco de Dados Nacional de Vulnerabilidades de Segurança do Brasil. 
+                    Consulte vulnerabilidades CVE traduzidas para o português e mantenha-se atualizado 
+                    sobre as ameaças de segurança que afetam sistemas e aplicações.
+                </p>
+                <div class="d-flex gap-3 flex-wrap">
+                    <a href="{{ url_for('busca') }}" class="btn btn-warning btn-lg">
+                        <i class="fas fa-search me-2"></i>Buscar Vulnerabilidades
+                    </a>
+                    <a href="{{ url_for('sobre') }}" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-info-circle me-2"></i>Sobre o Projeto
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6 text-center">
+                <div class="feature-icon">
+                    <i class="fas fa-database text-warning"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container py-5">
+    <!-- Estatísticas -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <h2 class="text-center mb-4">Por que usar o BNVD?</h2>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="feature-icon-small mb-3">
+                        <i class="fas fa-language text-primary"></i>
+                    </div>
+                    <h5 class="card-title">Tradução Automática</h5>
+                    <p class="card-text">
+                        <strong>Tradução por máquina:</strong> As descrições e informações são traduzidas automaticamente do inglês para o português. 
+                        <a href="{{ url_for('sobre') }}" class="text-decoration-none">Saiba como ajudar com traduções humanas</a>.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="feature-icon-small mb-3">
+                        <i class="fas fa-sync text-success"></i>
+                    </div>
+                    <h5 class="card-title">Dados Atualizados</h5>
+                    <p class="card-text">
+                        Sincronização constante com a National Vulnerability Database (NVD) 
+                        para informações sempre atualizadas.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="feature-icon-small mb-3">
+                        <i class="fas fa-search-plus text-info"></i>
+                    </div>
+                    <h5 class="card-title">Busca Simplificada</h5>
+                    <p class="card-text">
+                        Busque por CVE ID, fabricante ou severidade CVSS. 
+                        Interface simples e objetiva.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Busca Rápida -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card border-0 shadow">
+                <div class="card-body p-4">
+                    <h3 class="card-title text-center mb-4">
+                        <i class="fas fa-bolt text-warning me-2"></i>
+                        Busca Rápida
+                    </h3>
+                    <form action="{{ url_for('busca') }}" method="GET" class="row g-3">
+                        <div class="col-md-6">
+                            <label for="cve_id" class="form-label">CVE ID</label>
+                            <input type="text" class="form-control" id="cve_id" name="cve_id" 
+                                   placeholder="Ex: CVE-2023-12345">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="vendor" class="form-label">Vendor/Fabricante</label>
+                            <input type="text" class="form-control" id="vendor" name="vendor" 
+                                   placeholder="Ex: microsoft, adobe, google">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="severidade" class="form-label">Severidade</label>
+                            <select class="form-select" id="severidade" name="severidade">
+                                <option value="">Todas</option>
+                                <option value="CRITICAL">Crítica</option>
+                                <option value="HIGH">Alta</option>
+                                <option value="MEDIUM">Média</option>
+                                <option value="LOW">Baixa</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-search me-2"></i>Buscar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- As 5 Vulnerabilidades Mais Recentes -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm border-start border-info border-4">
+                <div class="card-body p-4 text-center">
+                    <h2 class="card-title text-info mb-3">
+                        <i class="fas fa-clock text-warning me-2"></i>
+                        As 5 Vulnerabilidades Mais Recentes
+                    </h2>
+                    <p class="text-muted mb-3">
+                        Mantenha-se atualizado com as vulnerabilidades de segurança mais recentes descobertas nos últimos 7 dias.
+                    </p>
+                    <a href="{{ url_for('cinco_recentes') }}" class="btn btn-info btn-lg">
+                        <i class="fas fa-eye me-2"></i>Ver as 5 Vulnerabilidades Mais Recentes
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- O que são CVEs -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 bg-light">
+                <div class="card-body p-5">
+                    <h3 class="card-title text-center mb-4">
+                        <i class="fas fa-question-circle text-info me-2"></i>
+                        O que são CVEs?
+                    </h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p>
+                                <strong>CVE (Common Vulnerabilities and Exposures)</strong> é um sistema de 
+                                identificação único para vulnerabilidades de segurança conhecidas publicamente. 
+                                Cada CVE recebe um identificador único que facilita a comunicação sobre 
+                                vulnerabilidades específicas entre diferentes ferramentas e serviços de segurança.
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p>
+                                O BNVD democratiza o acesso a essas informações críticas, oferecendo 
+                                uma interface em português e contexto adequado para profissionais de segurança, 
+                                desenvolvedores e organizações brasileiras que precisam se manter atualizados 
+                                sobre ameaças de segurança.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="text-center mt-4">
+                        <a href="{{ url_for('sobre') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-right me-2"></i>Saiba Mais
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Aviso sobre Tradução Automática -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="alert alert-warning border-0 shadow-sm">
+                <h5 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Aviso Importante: Tradução Automática</h5>
+                <div class="row">
+                    <div class="col-md-8">
+                        <p class="mb-2">
+                            <strong>⚠️ Tradução por Máquina:</strong> Todas as descrições de vulnerabilidades são traduzidas automaticamente do inglês para o português. 
+                            Não são traduções humanas e podem conter imprecisões técnicas.
+                        </p>
+                        <p class="mb-0">
+                            <strong>🐌 Velocidade:</strong> O site está lento porque traduzimos em tempo real a cada visualização. 
+                            Pedimos sua compreensão enquanto trabalhamos na melhoria.
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <strong>Como Contribuir:</strong><br>
+                        <a href="{{ url_for('sobre') }}" class="btn btn-outline-warning btn-sm mt-2">
+                            <i class="fas fa-hands-helping me-1"></i>Ajudar com Traduções
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

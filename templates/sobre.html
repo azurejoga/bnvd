@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+
+{% block title %}Sobre o Projeto - BNVD{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-5">
+                <h1 class="display-4 fw-bold text-primary mb-3">
+                    <i class="fas fa-info-circle me-3"></i>
+                    Sobre o BNVD
+                </h1>
+                <p class="lead text-muted">
+                    Democratizando o acesso à informação de segurança cibernética no Brasil
+                </p>
+            </div>
+
+            <!-- Missão -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h3 class="card-title text-primary mb-3">
+                        <i class="fas fa-bullseye me-2"></i>Nossa Missão
+                    </h3>
+                    <p class="card-text">
+                        O BNVD foi criado para preencher uma lacuna crítica no ecossistema de 
+                        segurança cibernética brasileiro: a falta de um banco de dados nacional de 
+                        vulnerabilidades em português. Nossa missão é democratizar o acesso à informação 
+                        sobre vulnerabilidades de segurança, fornecendo dados precisos, atualizados e 
+                        compreensíveis para profissionais de TI, desenvolvedores e organizações brasileiras.
+                    </p>
+                </div>
+            </div>
+
+            <!-- O que oferecemos -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h3 class="card-title text-success mb-3">
+                        <i class="fas fa-gift me-2"></i>O que Oferecemos
+                    </h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    Banco de dados completo de CVEs em português
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    Busca avançada por múltiplos critérios
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    Informações de severidade CVSS traduzidas
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    Classificação por tipos de fraqueza (CWE)
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    Atualizações automáticas da base NVD
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    Interface responsiva e intuitiva
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    Filtros por vendor, produto e ano
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    Detalhes técnicos completos
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tecnologia -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h3 class="card-title text-info mb-3">
+                        <i class="fas fa-cogs me-2"></i>Tecnologia
+                    </h3>
+                    <p class="card-text">
+                        O BNVD é desenvolvido utilizando tecnologias modernas e confiáveis:
+                    </p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="text-primary">Backend</h5>
+                            <ul class="list-unstyled">
+                                <li><i class="fab fa-python me-2"></i>Python 3.x</li>
+                                <li><i class="fas fa-flask me-2"></i>Flask Framework</li>
+                                <li><i class="fas fa-database me-2"></i>Integração com API NVD 2.0</li>
+                                <li><i class="fas fa-shield-alt me-2"></i>Rate limiting e cache</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="text-primary">Frontend</h5>
+                            <ul class="list-unstyled">
+                                <li><i class="fab fa-html5 me-2"></i>HTML5 semântico</li>
+                                <li><i class="fab fa-bootstrap me-2"></i>Bootstrap 5</li>
+                                <li><i class="fab fa-js me-2"></i>JavaScript vanilla</li>
+                                <li><i class="fas fa-mobile-alt me-2"></i>Design responsivo</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tradução Automática -->
+            <div class="card border-0 shadow-sm mb-4 border-start border-warning border-4">
+                <div class="card-body p-4">
+                    <h3 class="card-title text-warning mb-3">
+                        <i class="fas fa-robot me-2"></i>Sobre as Traduções Automáticas
+                    </h3>
+                    <div class="alert alert-warning">
+                        <h5 class="alert-heading">⚠️ Aviso Importante</h5>
+                        <p><strong>Todas as descrições de vulnerabilidades são traduzidas automaticamente por máquina, não por humanos.</strong></p>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="text-secondary">Como Funciona Atualmente</h5>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-cog text-warning me-2"></i>
+                                    Tradução em tempo real a cada visualização
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-clock text-warning me-2"></i>
+                                    Processo lento que afeta a velocidade do site
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                    Possíveis imprecisões em termos técnicos
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-language text-warning me-2"></i>
+                                    Google Translate como fonte principal
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="text-success">Como Você Pode Ajudar</h5>
+                            <ol>
+                                <li class="mb-2">Baixe os XMLs dos anos 2002-2025 da NVD</li>
+                                <li class="mb-2">Traduza para português brasileiro</li>
+                                <li class="mb-2">Envie as traduções para a NVD</li>
+                                <li class="mb-2">A NVD incorpora no site oficial</li>
+                                <li class="mb-2">Acessamos diretamente via API</li>
+                            </ol>
+                            <div class="mt-3">
+                                <a href="https://nvd.nist.gov/vuln/data-feeds" target="_blank" class="btn btn-success btn-sm">
+                                    <i class="fas fa-download me-1"></i>Baixar XMLs da NVD
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <h6 class="text-primary">
+                            <i class="fas fa-lightbulb me-2"></i>Por que Tradução Humana é Melhor?
+                        </h6>
+                        <p class="mb-0 small">
+                            Traduções humanas garantem precisão técnica, contexto adequado e terminologia correta. 
+                            Com traduções oficiais da NVD, poderemos eliminar a tradução em tempo real e melhorar significativamente a velocidade do site.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fonte dos Dados -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h3 class="card-title text-warning mb-3">
+                        <i class="fas fa-source me-2"></i>Fonte dos Dados
+                    </h3>
+                    <p class="card-text">
+                        Todos os dados de vulnerabilidades são obtidos diretamente da 
+                        <strong>National Vulnerability Database (NVD)</strong> do NIST (National Institute 
+                        of Standards and Technology) dos Estados Unidos, que é a fonte oficial e mais 
+                        confiável de informações sobre vulnerabilidades CVE mundialmente.
+                    </p>
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Atualização:</strong> Nossa base de dados é sincronizada regularmente 
+                        com a NVD para garantir que você tenha acesso às informações mais recentes 
+                        sobre vulnerabilidades de segurança.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Como usar -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h3 class="card-title text-secondary mb-3">
+                        <i class="fas fa-question-circle me-2"></i>Como Usar
+                    </h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>1. Busca Simples</h5>
+                            <p>Use a busca rápida na página inicial para encontrar vulnerabilidades por CVE ID, vendor ou ano.</p>
+                            
+                            <h5>2. Busca Avançada</h5>
+                            <p>Na página de busca, utilize múltiplos filtros para refinar seus resultados.</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>3. Análise Detalhada</h5>
+                            <p>Clique em qualquer CVE para ver informações detalhadas incluindo métricas CVSS e produtos afetados.</p>
+                            
+                            <h5>4. Compartilhamento</h5>
+                            <p>Compartilhe links diretos para vulnerabilidades específicas com sua equipe.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Público Alvo -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h3 class="card-title text-primary mb-3">
+                        <i class="fas fa-users me-2"></i>Para Quem é o BNVD
+                    </h3>
+                    <div class="row">
+                        <div class="col-md-4 text-center mb-3">
+                            <div class="feature-icon-small mb-2">
+                                <i class="fas fa-user-shield text-primary"></i>
+                            </div>
+                            <h6>Profissionais de Segurança</h6>
+                            <p class="small text-muted">
+                                Analistas, pentesters e especialistas em cybersecurity
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-center mb-3">
+                            <div class="feature-icon-small mb-2">
+                                <i class="fas fa-code text-success"></i>
+                            </div>
+                            <h6>Desenvolvedores</h6>
+                            <p class="small text-muted">
+                                Programadores que precisam monitorar vulnerabilidades em suas aplicações
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-center mb-3">
+                            <div class="feature-icon-small mb-2">
+                                <i class="fas fa-building text-info"></i>
+                            </div>
+                            <h6>Organizações</h6>
+                            <p class="small text-muted">
+                                Empresas que precisam gerenciar riscos de segurança
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Encontrou um Erro? -->
+            <div class="card border-0 shadow-sm mb-4 border-start border-warning border-4">
+                <div class="card-body p-4">
+                    <h3 class="card-title text-warning mb-3">
+                        <i class="fas fa-bug me-2"></i>Encontrou um Erro de Tradução?
+                    </h3>
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <p class="card-text mb-3">
+                                Se você encontrou um erro de tradução ou quer ajudar no desenvolvimento do site, 
+                                estamos sempre abertos a contribuições da comunidade brasileira de segurança cibernética.
+                            </p>
+                            <p class="card-text">
+                                <strong>Entre em contato conosco:</strong>
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="p-3 bg-warning bg-opacity-10 rounded">
+                                <i class="fas fa-envelope text-warning fa-3x mb-2"></i>
+                                <h5 class="text-warning">Contato</h5>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center mt-4">
+                        <a href="mailto:contato@bnvd.org" class="btn btn-warning btn-lg shadow-sm">
+                            <i class="fas fa-envelope me-2"></i>contato@bnvd.org
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contribua com o Projeto -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4 text-center">
+                    <h3 class="card-title text-success mb-3">
+                        <i class="fas fa-hands-helping me-2"></i>Contribua com o Projeto
+                    </h3>
+                    <p class="card-text">
+                        O BNVD é um projeto de código aberto e comunidade. Se você é um 
+                        profissional de segurança, desenvolvedor ou simplesmente alguém interessado 
+                        em cybersecurity, sua contribuição é bem-vinda!
+                    </p>
+                    <div class="d-flex justify-content-center gap-3 flex-wrap">
+                        <a href="{{ url_for('busca') }}" class="btn btn-primary">
+                            <i class="fas fa-search me-2"></i>Explorar Vulnerabilidades
+                        </a>
+                        <a href="{{ url_for('politica') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-file-alt me-2"></i>Política de Divulgação
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Créditos e Copyright -->
+            <div class="card border-0 shadow-lg bg-gradient">
+                <div class="card-body p-5 text-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <div class="mb-4">
+                        <i class="fas fa-heart text-light fa-2x mb-3" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));"></i>
+                        <h3 class="card-title mb-3" style="text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+                            Feito com 🩵 por
+                        </h3>
+                    </div>
+                    
+                    <div class="row justify-content-center">
+                        <div class="col-lg-8">
+                            <div class="p-4 rounded" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
+                                <h4 class="mb-3" style="text-shadow: 0 1px 3px rgba(0,0,0,0.3);">
+                                    <i class="fas fa-user-circle me-2"></i>Juan Mathews Rebello Santos
+                                </h4>
+                                
+                                <p class="lead mb-4" style="text-shadow: 0 1px 2px rgba(0,0,0,0.3);">
+                                    Para a comunidade brasileira de segurança cibernética
+                                </p>
+                                
+                                <div class="d-flex justify-content-center gap-3 flex-wrap mb-4">
+                                    <a href="https://github.com/azurejoga/" target="_blank" 
+                                       class="btn btn-light btn-lg shadow-sm text-dark">
+                                        <i class="fab fa-github me-2"></i>GitHub
+                                    </a>
+                                    <a href="https://linkedin.com/in/juan-mathews-rebello-santos-/" target="_blank" 
+                                       class="btn btn-primary btn-lg shadow-sm" style="background-color: #0077b5; border-color: #0077b5;">
+                                        <i class="fab fa-linkedin me-2"></i>LinkedIn
+                                    </a>
+                                </div>
+                                
+                                <div class="small opacity-75">
+                                    <i class="fas fa-shield-alt me-1"></i>
+                                    Desenvolvido para fortalecer a segurança cibernética no Brasil
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4" style="border-color: rgba(255,255,255,0.3);">
+                    
+                    <div class="row text-center">
+                        <div class="col-md-4 mb-3">
+                            <i class="fas fa-code fa-2x mb-2 opacity-75"></i>
+                            <div class="small">Open Source</div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <i class="fas fa-users fa-2x mb-2 opacity-75"></i>
+                            <div class="small">Comunidade</div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <i class="fas fa-globe-americas fa-2x mb-2 opacity-75"></i>
+                            <div class="small">Brasil</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

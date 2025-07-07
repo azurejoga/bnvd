@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Vulnerabilidades Recentes - BNVD{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="fas fa-clock text-warning me-2"></i>
+                    Vulnerabilidades Recentes
+                </h2>
+                <div class="text-muted">
+                    <small>Últimos 7 dias</small>
+                </div>
+            </div>
+
+            {% if total_results > 0 %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Encontradas <strong>{{ "{:,}".format(total_results).replace(',', '.') }}</strong> vulnerabilidades publicadas nos últimos 7 dias
+                </div>
+
+                <div class="row">
+                    {% for vuln in vulnerabilidades %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 border-left-warning">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title text-primary mb-0">
+                                            <a href="{{ url_for('detalhes', cve_id=vuln.cve.id) }}" class="text-decoration-none">
+                                                {{ vuln.cve.id }}
+                                            </a>
+                                        </h6>
+                                        {% if vuln.cve.metrics %}
+                                            {% set severity = vuln.cve.metrics | extract_severity %}
+                                            {% if severity %}
+                                                <span class="badge bg-{{ 'danger' if severity == 'CRITICAL' else 'warning' if severity in ['HIGH', 'MEDIUM'] else 'info' }}">
+                                                    {{ severity | translate_severity }}
+                                                </span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="text-muted small mb-2">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        {{ vuln.cve.published | format_date }}
+                                    </div>
+                                    
+                                    {% if vuln.cve.descriptions %}
+                                        {% set description_found = namespace(value=false) %}
+                                        {% for desc in vuln.cve.descriptions %}
+                                            {% if desc.lang == 'en' and not description_found.value %}
+                                                <p class="card-text small">
+                                                    {% if desc.value_pt and desc.value_pt.strip() and desc.value_pt != desc.value %}
+                                                        {{ desc.value_pt[:150] }}{% if desc.value_pt|length > 150 %}...{% endif %}
+                                                    {% elif desc.value and desc.value.strip() %}
+                                                        {{ desc.value[:150] }}{% if desc.value|length > 150 %}...{% endif %}
+                                                    {% else %}
+                                                        <em class="text-muted">Descrição não disponível</em>
+                                                    {% endif %}
+                                                </p>
+                                                {% set description_found.value = true %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                    
+                                    {% if vuln.cve.metrics %}
+                                        {% set score = vuln.cve.metrics | extract_cvss_score %}
+                                        {% if score %}
+                                            <div class="mt-2">
+                                                <small class="text-muted">CVSS: {{ "%.1f"|format(score) }}</small>
+                                            </div>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                                <div class="card-footer bg-transparent border-0 pt-0">
+                                    <a href="{{ url_for('detalhes', cve_id=vuln.cve.id) }}" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-info-circle me-1"></i>Detalhes
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Paginação -->
+                {% if total_pages > 1 %}
+                    <nav aria-label="Navegação de páginas">
+                        <ul class="pagination justify-content-center">
+                            {% if page > 1 %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('recentes', page=page-1) }}">
+                                        <i class="fas fa-chevron-left"></i> Anterior
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for p in range(1, total_pages + 1) %}
+                                {% if p == page %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ p }}</span>
+                                    </li>
+                                {% elif p <= 3 or p >= total_pages - 2 or (p >= page - 2 and p <= page + 2) %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('recentes', page=p) }}">{{ p }}</a>
+                                    </li>
+                                {% elif p == 4 and page > 6 %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                {% elif p == total_pages - 3 and page < total_pages - 5 %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if page < total_pages %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('recentes', page=page+1) }}">
+                                        Próxima <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+
+            {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Nenhuma vulnerabilidade encontrada nos últimos 7 dias.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}Buscar Vulnerabilidades - BNVD{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="fas fa-search text-primary me-3"></i>
+                Buscar Vulnerabilidades
+            </h1>
+        </div>
+    </div>
+
+    <!-- Formulário de Busca -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-filter me-2"></i>Filtros de Busca
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('busca') }}">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="cve_id" class="form-label">CVE ID</label>
+                                <input type="text" class="form-control" id="cve_id" name="cve_id" 
+                                       value="{{ cve_id|e }}" placeholder="Ex: CVE-2023-44487">
+                                <div class="form-text">Busque por um CVE específico</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="vendor" class="form-label">Vendor/Fabricante</label>
+                                <input type="text" class="form-control" id="vendor" name="vendor" 
+                                       value="{{ vendor|e }}" placeholder="Ex: Microsoft, Adobe, Google">
+                                <div class="form-text">Busque por fabricante específico</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="severidade" class="form-label">Severidade CVSS</label>
+                                <select class="form-select" id="severidade" name="severidade">
+                                    <option value="">Todas</option>
+                                    <option value="CRITICAL" {% if severidade == 'CRITICAL' %}selected{% endif %}>
+                                        Crítica (9.0-10.0)
+                                    </option>
+                                    <option value="HIGH" {% if severidade == 'HIGH' %}selected{% endif %}>
+                                        Alta (7.0-8.9)
+                                    </option>
+                                    <option value="MEDIUM" {% if severidade == 'MEDIUM' %}selected{% endif %}>
+                                        Média (4.0-6.9)
+                                    </option>
+                                    <option value="LOW" {% if severidade == 'LOW' %}selected{% endif %}>
+                                        Baixa (0.1-3.9)
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-8">
+                                <a href="{{ url_for('busca') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times me-2"></i>Limpar Filtros
+                                </a>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-search me-2"></i>Buscar Vulnerabilidades
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resultados -->
+    {% if error_message %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-warning" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                {{ error_message }}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if vulnerabilidades %}
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>
+                    <i class="fas fa-list me-2"></i>
+                    Resultados da Busca
+                </h4>
+                <span class="badge bg-primary fs-6">
+                    {{ total_results }} vulnerabilidades encontradas
+                </span>
+            </div>
+
+            <!-- Lista de Vulnerabilidades -->
+            {% for vuln in vulnerabilidades %}
+            {% set cve = vuln.cve %}
+            <div class="card mb-3 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h5 class="card-title">
+                                <a href="{{ url_for('detalhes', cve_id=cve.id) }}" class="text-decoration-none">
+                                    {{ cve.id }}
+                                </a>
+                                
+                                <!-- Severidade Badge -->
+                                {% if cve.metrics %}
+                                    {% set severity = cve.metrics | extract_severity %}
+                                    {% if severity != "Não informado" %}
+                                        {% if severity == "Crítica" %}
+                                            <span class="badge bg-danger ms-2">{{ severity }}</span>
+                                        {% elif severity == "Alta" %}
+                                            <span class="badge bg-warning text-dark ms-2">{{ severity }}</span>
+                                        {% elif severity == "Média" %}
+                                            <span class="badge bg-info ms-2">{{ severity }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary ms-2">{{ severity }}</span>
+                                        {% endif %}
+                                    {% endif %}
+                                {% endif %}
+                            </h5>
+                            
+                            <p class="card-text">
+                                {% if cve.descriptions %}
+                                    {% set description_found = namespace(value=false) %}
+                                    {% for desc in cve.descriptions %}
+                                        {% if desc.lang == 'en' and not description_found.value %}
+                                            {% if desc.value_pt and desc.value_pt.strip() and desc.value_pt != desc.value %}
+                                                {{ desc.value_pt[:200] }}{% if desc.value_pt|length > 200 %}...{% endif %}
+                                            {% elif desc.value and desc.value.strip() %}
+                                                {{ desc.value[:200] }}{% if desc.value|length > 200 %}...{% endif %}
+                                            {% else %}
+                                                <em class="text-muted">Descrição não disponível</em>
+                                            {% endif %}
+                                            {% set description_found.value = true %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                            </p>
+                            
+                            <div class="text-muted small">
+                                <i class="fas fa-calendar me-1"></i>
+                                Publicado: {{ cve.published | format_date }}
+                                
+                                {% if cve.lastModified %}
+                                    <span class="ms-3">
+                                        <i class="fas fa-edit me-1"></i>
+                                        Atualizado: {{ cve.lastModified | format_date }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 text-md-end">
+                            <!-- Score CVSS -->
+                            {% if cve.metrics %}
+                                {% set score = cve.metrics | extract_cvss_score %}
+                                {% if score %}
+                                <div class="mb-2">
+                                    <span class="h4 text-primary">{{ "%.1f"|format(score) }}</span>
+                                    <small class="text-muted">/10.0</small>
+                                </div>
+                                {% endif %}
+                            {% endif %}
+                            
+                            <!-- CWE -->
+                            {% if cve.weaknesses %}
+                                <div class="mb-2">
+                                    {% for weakness in cve.weaknesses[:2] %}
+                                        {% for desc in weakness.description %}
+                                            {% if desc.lang == 'en' %}
+                                                <span class="badge bg-light text-dark border me-1">
+                                                    {{ desc.value | translate_cwe }}
+                                                </span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            
+                            <a href="{{ url_for('detalhes', cve_id=cve.id) }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye me-1"></i>Ver Detalhes
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Paginação -->
+            {% if total_pages > 1 %}
+            <nav aria-label="Navegação de páginas">
+                <ul class="pagination justify-content-center">
+                    <!-- Primeira página -->
+                    {% if page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('busca', page=1, cve_id=cve_id, keyword=keyword, vendor=vendor, ano=ano, severidade=severidade) }}">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Página anterior -->
+                    {% if page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('busca', page=page-1, cve_id=cve_id, keyword=keyword, vendor=vendor, ano=ano, severidade=severidade) }}">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Páginas -->
+                    {% for p in range([1, page-2]|max, [total_pages+1, page+3]|min) %}
+                        {% if p == page %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ p }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('busca', page=p, cve_id=cve_id, keyword=keyword, vendor=vendor, ano=ano, severidade=severidade) }}">
+                                {{ p }}
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <!-- Próxima página -->
+                    {% if page < total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('busca', page=page+1, cve_id=cve_id, keyword=keyword, vendor=vendor, ano=ano, severidade=severidade) }}">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Última página -->
+                    {% if page < total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('busca', page=total_pages, cve_id=cve_id, keyword=keyword, vendor=vendor, ano=ano, severidade=severidade) }}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.pagination .page-link {
+    color: #0d6efd;
+}
+.pagination .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+</style>
+{% endblock %}
