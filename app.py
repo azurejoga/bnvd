@@ -430,7 +430,7 @@ def cinco_recentes():
     """Página das 5 vulnerabilidades mais recentes"""
     try:
         response = nvd_client.get_recent_cves(
-            days=7,
+            days=0,
             start_index=0,
             results_per_page=5
         )
@@ -625,4 +625,4 @@ def vulnerabilidades_por_ano(year):
         return redirect(url_for('busca_por_ano'))
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=False, host='0.0.0.0', port=5000)
