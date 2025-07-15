@@ -432,14 +432,14 @@ class SEOManager:
 Contact: contato@bnvd.org
 Contact: https://github.com/azurejoga/
 Preferred-Languages: pt, en
-Canonical: https://bnvd.org/.well-known/security.txt
+Canonical: https://bnvd.replit.app/.well-known/security.txt
 
 # Escopo
 # Este site é mantido para fins educacionais e de pesquisa
 # Vulnerabilidades devem ser reportadas de forma responsável
 
-Policy: https://bnvd.org/politica
-Acknowledgments: https://bnvd.org/sobre
+Policy: https://bnvd.replit.app/politica
+Acknowledgments: https://bnvd.replit.app/sobre
 
 # Prazo para resposta: 72 horas
 # Divulgação coordenada após correção
@@ -519,7 +519,7 @@ Localização: Brasil
 National Vulnerability Database (NVD) - NIST
 Bootstrap Team
 Font Awesome
-
+Replit Platform
 
 /* SITE */
 
@@ -561,8 +561,8 @@ Componentes: responsive, PWA-ready, SEO-optimized
         <item>
             <title>CVE-{cve_id}</title>
             <description>{description_escaped}</description>
-            <link>https://bnvd.org/cve/{cve_id}</link>
-            <guid>https://bnvd.org/cve/{cve_id}</guid>
+            <link>https://bnvd.replit.app/cve/{cve_id}</link>
+            <guid>https://bnvd.replit.app/cve/{cve_id}</guid>
             <pubDate>{published}</pubDate>
             <category>Vulnerabilidade</category>
         </item>''')
@@ -571,18 +571,18 @@ Componentes: responsive, PWA-ready, SEO-optimized
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
     <channel>
         <title>BNVD - Vulnerabilidades Recentes</title>
-        <link>https://bnvd.org</link>
+        <link>https://bnvd.replit.app</link>
         <description>Feed de vulnerabilidades de segurança cibernética recentes do Banco Nacional de Vulnerabilidades</description>
         <language>pt-BR</language>
         <copyright>© 2025 BNVD - Todos os direitos reservados</copyright>
         <managingEditor>contato@bnvd.org (BNVD Team)</managingEditor>
         <webMaster>contato@bnvd.org (BNVD Team)</webMaster>
         <lastBuildDate>{datetime.now().strftime('%a, %d %b %Y %H:%M:%S %z')}</lastBuildDate>
-        <atom:link href="https://bnvd.org/feed.rss" rel="self" type="application/rss+xml"/>
+        <atom:link href="https://bnvd.replit.app/feed.rss" rel="self" type="application/rss+xml"/>
         <image>
-            <url>https://bnvd.org/static/icons/icon-192.png</url>
+            <url>https://bnvd.replit.app/static/icons/icon-192.png</url>
             <title>BNVD</title>
-            <link>https://bnvd.org</link>
+            <link>https://bnvd.replit.app</link>
         </image>{''.join(rss_items)}
     </channel>
 </rss>'''
@@ -615,8 +615,8 @@ Componentes: responsive, PWA-ready, SEO-optimized
                 atom_entries.append(f'''
     <entry>
         <title>CVE-{cve_id}</title>
-        <link href="https://bnvd.org/cve/{cve_id}"/>
-        <id>https://bnvd.org/cve/{cve_id}</id>
+        <link href="https://bnvd.replit.app/cve/{cve_id}"/>
+        <id>https://bnvd.replit.app/cve/{cve_id}</id>
         <updated>{published}</updated>
         <summary>{description_escaped}</summary>
         <category term="vulnerabilidade"/>
@@ -629,9 +629,9 @@ Componentes: responsive, PWA-ready, SEO-optimized
         atom_feed = f'''<?xml version="1.0" encoding="UTF-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
     <title>BNVD - Vulnerabilidades Recentes</title>
-    <link href="https://bnvd.org"/>
-    <link href="https://bnvd.org/feed.atom" rel="self"/>
-    <id>https://bnvd.org/feed.atom</id>
+    <link href="https://bnvd.replit.app"/>
+    <link href="https://bnvd.replit.app/feed.atom" rel="self"/>
+    <id>https://bnvd.replit.app/feed.atom</id>
     <updated>{datetime.now().isoformat()}</updated>
     <subtitle>Feed de vulnerabilidades de segurança cibernética recentes</subtitle>
     <author>

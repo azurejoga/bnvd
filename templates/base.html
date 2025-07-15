@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
+
     <!-- SEO Meta Tags -->
     <title>{% block title %}Banco Nacional de Vulnerabilidades Cibernéticas (BNVD) - A fonte confiável de vulnerabilidades no Brasil{% endblock %}</title>
     <meta name="description" content="{% block description %}A fonte confiável de vulnerabilidades de segurança cibernética no Brasil. Informações atualizadas do NVD traduzidas para português.{% endblock %}">
@@ -14,19 +14,19 @@
     <meta name="language" content="pt-BR">
     <meta name="geo.region" content="BR">
     <meta name="geo.country" content="Brasil">
-    
+
     <!-- Canonical URL -->
     <link rel="canonical" href="{% block canonical %}{{ request.url }}{% endblock %}">
-    
+
     <!-- Theme Colors -->
     <meta name="theme-color" content="#0d6efd">
     <meta name="msapplication-TileColor" content="#0d6efd">
-    
+
     <!-- Apple Touch Icons -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="BNVD">
-    
+
     <!-- Open Graph (Facebook) -->
     <meta property="og:type" content="{% block og_type %}website{% endblock %}">
     <meta property="og:url" content="{{ request.url }}">
@@ -37,7 +37,7 @@
     <meta property="og:image:height" content="630">
     <meta property="og:site_name" content="Banco Nacional de Vulnerabilidades Cibernéticas (BNVD)">
     <meta property="og:locale" content="pt_BR">
-    
+
     <!-- Twitter Cards -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:url" content="{{ request.url }}">
@@ -46,7 +46,7 @@
     <meta name="twitter:image" content="{{ url_for('static', filename='images/bnvd-logo.png', _external=True) }}">
     <meta name="twitter:creator" content="@bnvd_brasil">
     <meta name="twitter:site" content="@bnvd_brasil">
-    
+
     <!-- Structured Data -->
     <script type="application/ld+json">
     {
@@ -67,16 +67,16 @@
         }
     }
     </script>
-    
+
     {% block structured_data %}{% endblock %}
-    
+
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    
+
     {% block extra_head %}{% endblock %}
 </head>
 <body>
@@ -87,11 +87,11 @@
                 <i class="fas fa-shield-alt me-2 fa-lg"></i>
                 <span>Banco nacional de vulnerabilidades (BNVD)</span>
             </a>
-            
+
             <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            
+
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto ms-lg-4">
                     <li class="nav-item">
@@ -135,7 +135,7 @@
                         </ul>
                     </li>
                 </ul>
-                
+
                 <!-- Flag brasileira com efeito -->
                 <div class="navbar-text d-flex align-items-center">
                     <div class="d-flex align-items-center bg-white bg-opacity-20 rounded px-3 py-1">
@@ -176,7 +176,7 @@
                     <div class="d-flex align-items-center mb-3">
                         <i class="fas fa-shield-alt fa-2x text-primary me-3"></i>
                         <div>
-                            <h5 class="mb-1">Banco nacional de vulnerabilidades (BNVD)</h5>
+                            <h2 class="mb-1">Banco nacional de vulnerabilidades (BNVD)</h2>
                             <p class="mb-0 text-light opacity-75">A fonte confiável de vulnerabilidades no Brasil</p>
                         </div>
                     </div>
@@ -190,23 +190,23 @@
                         </small>
                     </div>
                 </div>
-                
+
                 <div class="col-lg-6">
                     <div class="text-lg-end">
                         <div class="mb-3">
                             <small class="text-light opacity-50 d-block mb-3">
                                 © 2025 Banco nacional de vulnerabilidades (BNVD) - Todos os direitos reservados
                             </small>
-                            
+
                             <div class="d-flex justify-content-lg-end align-items-center mb-2">
                                 <i class="fas fa-heart text-danger me-2"></i>
                                 <span class="text-light">Feito com 🩵 por</span>
                             </div>
-                            <h6 class="text-primary mb-2">Juan Mathews Rebello Santos</h6>
+                            <span class="text-primary mb-2">Juan Mathews Rebello Santos</span>
                             <div class="d-flex justify-content-lg-end gap-2">
-                                <a href="https://github.com/azurejoga/bnvd/" target="_blank" rel="noopener noreferrer"
+                                <a href="https://github.com/azurejoga/bnvd" target="_blank" rel="noopener noreferrer"
                                    class="btn btn-outline-light btn-sm">
-                                    <i class="fab fa-github me-1"></i>GitHub do projeto
+                                    <i class="fab fa-github me-1"></i>GitHub do Projeto
                                 </a>
                                 <a href="https://linkedin.com/in/juan-mathews-rebello-santos-/" target="_blank" rel="noopener noreferrer"
                                    class="btn btn-primary btn-sm">
@@ -224,7 +224,6 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    
-    {% block extra_scripts %}{% endblock %}
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

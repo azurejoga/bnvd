@@ -7,7 +7,7 @@ A BNVD API v1 é uma API REST que fornece acesso programático ao Banco Nacional
 ## Base URL
 
 ```
-https://bnvd.org/api/v1
+https://[seu-dominio]/api/v1
 ```
 
 ## Autenticação

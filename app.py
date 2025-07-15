@@ -11,8 +11,7 @@ from translator import DatabaseTranslator
 from vulns import VulnerabilityDatabase
 from seo import SEOManager, init_seo_routes
 from security import security_manager
-from werkzeug.middleware.proxy_fix import ProxyFix
-
+from werkzeug.middleware.proxy_fix import ProxyFix                                                                      
 
 # Carregar variáveis de ambiente
 load_dotenv()
@@ -23,9 +22,8 @@ logging.basicConfig(level=logging.DEBUG)
 # Criar aplicação Flask
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "fallback-secret-key-for-dev")
-app.config['PREFERRED_URL_SCHEME'] = 'https'
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
-
+app.config['PREFERRED_URL_SCHEME'] = 'https'                                                                            
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)                                                              
 
 # Inicializar cliente NVD com banco de dados
 api_key = os.environ.get("NVD_API_KEY")
@@ -289,6 +287,7 @@ def api_recent_cves():
         page = int(request.args.get('page', 1))
         per_page = min(int(request.args.get('per_page', 10)), 10)  # Limite menor sem token
         start_index = (page - 1) * per_page
+        include_pt = request.args.get('include_pt', 'false').lower() == 'true'
         
         response = nvd_client.get_recent_cves(
             days=days,
@@ -297,6 +296,19 @@ def api_recent_cves():
         )
         
         if response:
+            # Adicionar traduções portuguesas se solicitado
+            if include_pt and 'vulnerabilities' in response:
+                for vuln in response['vulnerabilities']:
+                    if 'cve' in vuln and 'descriptions' in vuln['cve']:
+                        for desc in vuln['cve']['descriptions']:
+                            if desc.get('lang') == 'en' and desc.get('value'):
+                                try:
+                                    translated = translator.translate_text(desc['value'])
+                                    desc['value_pt'] = translated
+                                except Exception as e:
+                                    logging.warning(f"Erro na tradução da API: {e}")
+                                    desc['value_pt'] = desc['value']
+            
             # Adicionar aviso sobre limitações
             response['api_notice'] = 'API pública limitada a 10 resultados. Para acesso completo, use /api/token/<seu_token>/recent'
             return response
@@ -314,6 +326,7 @@ def api_kev_cves():
         page = int(request.args.get('page', 1))
         per_page = min(int(request.args.get('per_page', 10)), 10)  # Limite menor sem token
         start_index = (page - 1) * per_page
+        include_pt = request.args.get('include_pt', 'false').lower() == 'true'
         
         response = nvd_client.get_kev_cves(
             start_index=start_index,
@@ -321,6 +334,19 @@ def api_kev_cves():
         )
         
         if response:
+            # Adicionar traduções portuguesas se solicitado
+            if include_pt and 'vulnerabilities' in response:
+                for vuln in response['vulnerabilities']:
+                    if 'cve' in vuln and 'descriptions' in vuln['cve']:
+                        for desc in vuln['cve']['descriptions']:
+                            if desc.get('lang') == 'en' and desc.get('value'):
+                                try:
+                                    translated = translator.translate_text(desc['value'])
+                                    desc['value_pt'] = translated
+                                except Exception as e:
+                                    logging.warning(f"Erro na tradução da API: {e}")
+                                    desc['value_pt'] = desc['value']
+            
             # Adicionar aviso sobre limitações
             response['api_notice'] = 'API pública limitada a 10 resultados. Para acesso completo, use /api/token/<seu_token>/kev'
             return response
@@ -423,6 +449,101 @@ def kev():
         logging.error(f"Erro ao carregar CVEs KEV: {str(e)}")
         flash(f"Erro ao carregar vulnerabilidades KEV: {str(e)}", "error")
         return redirect(url_for('index'))
+
+# Endpoint API para paginação AJAX
+@app.route('/api/vulnerabilidades/<int:year>')
+def api_vulnerabilidades_por_ano(year):
+    """API endpoint para vulnerabilidades por ano com paginação"""
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = min(int(request.args.get('per_page', 20)), 500)  # Máximo 500
+        offset = (page - 1) * per_page
+        include_pt = request.args.get('include_pt', 'false').lower() == 'true'
+        
+        # Buscar vulnerabilidades do ano específico
+        db = VulnerabilityDatabase(database_url=os.environ.get('DATABASE_URL'))
+        
+        db._ensure_connection()
+        
+        try:
+            import psycopg2.extras
+            cursor = db.connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            
+            # Contar total de vulnerabilidades do ano
+            cursor.execute("""
+                SELECT COUNT(*) as total
+                FROM vulnerabilities 
+                WHERE year = %s
+            """, (year,))
+            total_count = cursor.fetchone()['total']
+            
+            # Buscar vulnerabilidades paginadas
+            cursor.execute("""
+                SELECT cve_id, year, published_date, last_modified, vulnStatus, cvss_metrics
+                FROM vulnerabilities 
+                WHERE year = %s
+                ORDER BY published_date DESC
+                LIMIT %s OFFSET %s
+            """, (year, per_page, offset))
+            
+            vulnerabilities = []
+            rows = cursor.fetchall()
+            for row in rows:
+                # cvss_metrics já é um dict quando vem do banco
+                cvss_metrics = row['cvss_metrics'] if row['cvss_metrics'] else None
+                
+                vuln_data = {
+                    'cve_id': row['cve_id'],
+                    'year': row['year'],
+                    'published_date': row['published_date'].isoformat() if row['published_date'] else None,
+                    'last_modified': row['last_modified'].isoformat() if row['last_modified'] else None,
+                    'vulnStatus': row['vulnstatus'],
+                    'cvss_metrics': cvss_metrics
+                }
+                
+                # Adicionar tradução do status se português solicitado
+                if include_pt:
+                    vuln_data['vulnStatus_pt'] = filter_translate_status(row['vulnstatus'])
+                    if cvss_metrics and 'baseSeverity' in cvss_metrics:
+                        vuln_data['cvss_metrics_pt'] = cvss_metrics.copy()
+                        vuln_data['cvss_metrics_pt']['baseSeverity_pt'] = filter_translate_severity(cvss_metrics['baseSeverity'])
+                
+                vulnerabilities.append(vuln_data)
+            
+            cursor.close()
+            
+        except Exception as e:
+            logging.error(f"Erro na consulta de vulnerabilidades do ano {year}: {e}")
+            vulnerabilities = []
+            total_count = 0
+        finally:
+            db.close()
+        
+        # Calcular informações de paginação
+        total_pages = (total_count + per_page - 1) // per_page if total_count > 0 else 0
+        
+        return {
+            'status': 'success',
+            'data': {
+                'vulnerabilities': vulnerabilities,
+                'pagination': {
+                    'page': page,
+                    'per_page': per_page,
+                    'total_count': total_count,
+                    'total_pages': total_pages,
+                    'has_next': page < total_pages,
+                    'has_prev': page > 1
+                },
+                'year': year
+            }
+        }
+                             
+    except Exception as e:
+        logging.error(f"Erro ao buscar vulnerabilidades do ano {year}: {e}")
+        return {
+            'status': 'error',
+            'message': str(e)
+        }, 500
 
 # Nova rota para as 5 vulnerabilidades mais recentes
 @app.route('/5recentes')
@@ -574,8 +695,12 @@ def busca_por_ano():
 
 @app.route('/vulnerabilidades/<int:year>')
 def vulnerabilidades_por_ano(year):
-    """Página listando vulnerabilidades de um ano específico"""
+    """Página listando vulnerabilidades de um ano específico com paginação"""
     try:
+        page = int(request.args.get('page', 1))
+        per_page = 100  # Reduzir para paginação adequada
+        offset = (page - 1) * per_page
+        
         # Buscar vulnerabilidades do ano específico
         db = VulnerabilityDatabase(database_url=os.environ.get('DATABASE_URL'))
         
@@ -585,12 +710,22 @@ def vulnerabilidades_por_ano(year):
             import psycopg2.extras
             cursor = db.connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
             
+            # Contar total de vulnerabilidades do ano
+            cursor.execute("""
+                SELECT COUNT(*) as total
+                FROM vulnerabilities 
+                WHERE year = %s
+            """, (year,))
+            total_count = cursor.fetchone()['total']
+            
+            # Buscar vulnerabilidades paginadas
             cursor.execute("""
                 SELECT cve_id, year, published_date, last_modified, vulnStatus, cvss_metrics
                 FROM vulnerabilities 
                 WHERE year = %s
                 ORDER BY published_date DESC
-            """, (year,))
+                LIMIT %s OFFSET %s
+            """, (year, per_page, offset))
             
             vulnerabilities = []
             rows = cursor.fetchall()
@@ -612,12 +747,20 @@ def vulnerabilidades_por_ano(year):
         except Exception as e:
             logging.error(f"Erro na consulta de vulnerabilidades do ano {year}: {e}")
             vulnerabilities = []
+            total_count = 0
         finally:
             db.close()
         
+        # Calcular informações de paginação
+        total_pages = (total_count + per_page - 1) // per_page if total_count > 0 else 0
+        
         return render_template('vulnerabilidades-por-ano.html',
                              year=year,
-                             vulnerabilities=vulnerabilities)
+                             vulnerabilities=vulnerabilities,
+                             page=page,
+                             total_pages=total_pages,
+                             per_page=per_page,
+                             total_count=total_count)
                              
     except Exception as e:
         logging.error(f"Erro ao buscar vulnerabilidades do ano {year}: {e}")

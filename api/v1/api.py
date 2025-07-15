@@ -125,7 +125,7 @@ def api_root():
         'name': 'BNVD API v1',
         'description': 'Banco Nacional de Vulnerabilidades Cibernéticas - API REST',
         'version': '1.0.0',
-        'base_url': 'https://bnvd.org/api/v1',
+        'base_url': 'https://3bb1226b-7326-450c-9718-7460474e3bb4-00-hlsekyfc3ju1.kirk.replit.dev/api/v1',
         'endpoints': {
             'vulnerabilities': {
                 'GET /vulnerabilities': 'Lista todas as vulnerabilidades (paginado)',

@@ -1,6 +1,6 @@
 [project]
 name = "bnvd"
-version = "1.0"
+version = "1.1"
 description = "bnvd.org"
 requires-python = ">=3.11"
 dependencies = [

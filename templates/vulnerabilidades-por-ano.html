@@ -14,7 +14,7 @@
                     <li class="breadcrumb-item active" aria-current="page">{{ year }}</li>
                 </ol>
             </nav>
-            
+
             <!-- Cabeçalho -->
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-primary text-white">
@@ -27,7 +27,7 @@
                         </div>
                         <div class="col-auto">
                             <span class="badge bg-light text-primary fs-6">
-                                {{ vulnerabilities|length }} vulnerabilidade(s)
+                                {{ total_count }} vulnerabilidade(s)
                             </span>
                         </div>
                     </div>
@@ -38,13 +38,13 @@
                     </p>
                 </div>
             </div>
-            
+
             <!-- Lista de Vulnerabilidades -->
             {% if vulnerabilities %}
             <div class="card shadow-sm">
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-hover" id="vulnerabilities-table">
                             <thead class="table-light">
                                 <tr>
                                     <th>CVE ID</th>
@@ -55,7 +55,7 @@
                                     <th>Ações</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="vulnerabilities-tbody">
                                 {% for vuln in vulnerabilities %}
                                 <tr>
                                     <td>
@@ -115,6 +115,51 @@
                             </tbody>
                         </table>
                     </div>
+                    <!-- Indicador de carregamento -->
+                    <div id="loading-indicator" style="display: none; text-align: center;">
+                        <i class="fas fa-spinner fa-spin fa-2x"></i>
+                        <p>Carregando mais vulnerabilidades...</p>
+                    </div>
+                    <!-- Paginação -->
+                    {% if total_pages > 1 %}
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center">
+                            {% if page > 1 %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('vulnerabilidades_por_ano', year=year, page=page-1) }}" aria-label="Anterior">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" aria-label="Anterior">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            {% for page_num in range(1, total_pages + 1) %}
+                            <li class="page-item {% if page_num == page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('vulnerabilidades_por_ano', year=year, page=page_num) }}">{{ page_num }}</a>
+                            </li>
+                            {% endfor %}
+
+                            {% if page < total_pages %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('vulnerabilidades_por_ano', year=year, page=page+1) }}" aria-label="Próximo">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" aria-label="Próximo">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
                 </div>
             </div>
             {% else %}
@@ -134,4 +179,94 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Função para carregar dados dinamicamente
+    function loadVulnerabilitiesPage(year, page) {
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const tableBody = document.getElementById('vulnerabilities-tbody');
+
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'block';
+        }
+
+        // Fazer requisição AJAX para carregar nova página
+        fetch(`{{ url_for('vulnerabilidades_por_ano', year=year) }}?page=${page}`)
+            .then(response => response.text())
+            .then(html => {
+                // Criar um elemento temporário para parsear o HTML
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+
+                // Extrair apenas o tbody da nova página
+                const newTableBody = doc.getElementById('vulnerabilities-tbody');
+                if (newTableBody && tableBody) {
+                    tableBody.innerHTML = newTableBody.innerHTML;
+                }
+
+                // Atualizar informações de paginação
+                const newPagination = doc.querySelector('.pagination');
+                const currentPagination = document.querySelector('.pagination');
+                if (newPagination && currentPagination) {
+                    currentPagination.parentElement.innerHTML = newPagination.parentElement.innerHTML;
+                }
+
+                // Atualizar informações do cabeçalho
+                const newHeader = doc.querySelector('.card-body p');
+                const currentHeader = document.querySelector('.card-body p');
+                if (newHeader && currentHeader) {
+                    currentHeader.textContent = newHeader.textContent;
+                }
+
+                // Esconder indicador de carregamento
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'none';
+                }
+
+                // Rolar para o topo da tabela
+                document.getElementById('vulnerabilities-table').scrollIntoView({ 
+                    behavior: 'smooth' 
+                });
+            })
+            .catch(error => {
+                console.error('Erro ao carregar página:', error);
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'none';
+                }
+                alert('Erro ao carregar dados. Tente novamente.');
+            });
+    }
+
+    // Interceptar cliques nos links de paginação
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.page-link')) {
+            e.preventDefault();
+            const link = e.target.closest('.page-link');
+            const href = link.getAttribute('href');
+
+            // Extrair ano e página da URL
+            const urlParams = new URLSearchParams(href.split('?')[1] || '');
+            const page = urlParams.get('page') || '1';
+            const year = {{ year }};
+
+            // Carregar nova página dinamicamente
+            loadVulnerabilitiesPage(year, page);
+
+            // Atualizar URL no navegador
+            window.history.pushState({}, '', href);
+        }
+    });
+
+    // Adicionar feedback visual nos botões de ação
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-outline-primary')) {
+            const btn = e.target.closest('.btn-outline-primary');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Carregando...';
+        }
+    });
+});
+</script>
 {% endblock %}

@@ -16,14 +16,14 @@ class NVDClient:
         # Handle development mode
         if api_key == "development-mode":
             self.headers = {
-                'User-Agent': 'bnvd/1.0',
+                'User-Agent': 'bnvd/1.1',
                 'Accept': 'application/json'
             }
             self.min_request_interval = 6.0  # Still respect rate limits
         else:
             self.headers = {
                 'apiKey': api_key,
-                'User-Agent': 'bnvd/1.0',
+                'User-Agent': 'bnvd/1.1',
                 'Accept': 'application/json'
             }
             # Com API key: 50 requests per 30 seconds, sem API key: 5 requests per 30 seconds

@@ -46,7 +46,7 @@
                     <div class="feature-icon-small mb-3">
                         <i class="fas fa-language text-primary"></i>
                     </div>
-                    <h5 class="card-title">Tradução Automática</h5>
+                    <h3 class="card-title">Tradução Automática</h3>
                     <p class="card-text">
                         <strong>Tradução por máquina:</strong> As descrições e informações são traduzidas automaticamente do inglês para o português. 
                         <a href="{{ url_for('sobre') }}" class="text-decoration-none">Saiba como ajudar com traduções humanas</a>.
@@ -60,7 +60,7 @@
                     <div class="feature-icon-small mb-3">
                         <i class="fas fa-sync text-success"></i>
                     </div>
-                    <h5 class="card-title">Dados Atualizados</h5>
+                    <h3 class="card-title">Dados Atualizados</h3>
                     <p class="card-text">
                         Sincronização constante com a National Vulnerability Database (NVD) 
                         para informações sempre atualizadas.
@@ -74,7 +74,7 @@
                     <div class="feature-icon-small mb-3">
                         <i class="fas fa-search-plus text-info"></i>
                     </div>
-                    <h5 class="card-title">Busca Simplificada</h5>
+                    <h3 class="card-title">Busca Simplificada</h3>
                     <p class="card-text">
                         Busque por CVE ID, fabricante ou severidade CVSS. 
                         Interface simples e objetiva.
@@ -89,10 +89,10 @@
         <div class="col-12">
             <div class="card border-0 shadow">
                 <div class="card-body p-4">
-                    <h3 class="card-title text-center mb-4">
+                    <h2 class="card-title text-center mb-4">
                         <i class="fas fa-bolt text-warning me-2"></i>
                         Busca Rápida
-                    </h3>
+                    </h2>
                     <form action="{{ url_for('busca') }}" method="GET" class="row g-3">
                         <div class="col-md-6">
                             <label for="cve_id" class="form-label">CVE ID</label>
@@ -150,10 +150,10 @@
         <div class="col-12">
             <div class="card border-0 bg-light">
                 <div class="card-body p-5">
-                    <h3 class="card-title text-center mb-4">
+                    <h2 class="card-title text-center mb-4">
                         <i class="fas fa-question-circle text-info me-2"></i>
                         O que são CVEs?
-                    </h3>
+                    </h2>
                     <div class="row">
                         <div class="col-md-6">
                             <p>
