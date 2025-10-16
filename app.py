@@ -1,7 +1,7 @@
 import os
 import json
 import logging
-from flask import Flask, render_template, request, redirect, url_for, flash, Response
+from flask import Flask, render_template, request, redirect, url_for, flash, Response, jsonify
 from dotenv import load_dotenv
 from nvd_api import NVDClient
 from utils import (translate_severity, translate_cwe, translate_cvss_metrics, format_date, paginate_results,
@@ -22,8 +22,8 @@ logging.basicConfig(level=logging.DEBUG)
 # Criar aplicação Flask
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "fallback-secret-key-for-dev")
-app.config['PREFERRED_URL_SCHEME'] = 'https'                                                                            
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)                                                              
+app.config['PREFERRED_URL_SCHEME'] = 'https'
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 # Inicializar cliente NVD com banco de dados
 api_key = os.environ.get("NVD_API_KEY")
@@ -83,10 +83,28 @@ init_seo_routes(app, seo_manager)
 from api.v1 import api_v1
 app.register_blueprint(api_v1)
 
+# Inicializar sistema de notícias CISO Advisor
+from advisor import init_advisor, get_recent_news, get_month_news, get_news_content
+try:
+    init_advisor()
+    logging.info("Sistema de notícias CISO Advisor inicializado")
+except Exception as e:
+    logging.error(f"Erro ao inicializar sistema de notícias: {e}")
+
 @app.route('/')
 def index():
     """Página inicial do BNVD"""
     return render_template('index.html')
+
+@app.route('/sw.js')
+def service_worker():
+    """Serve o service worker do PWA na raiz"""
+    response = app.send_static_file('sw.js')
+    response.headers['Content-Type'] = 'application/javascript'
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 @app.route('/busca')
 def busca():
@@ -269,6 +287,16 @@ def sobre():
 def politica():
     """Página de política de divulgação responsável"""
     return render_template('politica.html')
+
+@app.route('/privacidade')
+def privacidade():
+    """Página de política de privacidade"""
+    return render_template('privacidade.html')
+
+@app.route('/downloads')
+def downloads():
+    """Página de downloads dos aplicativos"""
+    return render_template('downloads.html')
 
 @app.route('/api-docs')
 def api_docs():
@@ -551,7 +579,7 @@ def cinco_recentes():
     """Página das 5 vulnerabilidades mais recentes"""
     try:
         response = nvd_client.get_recent_cves(
-            days=0,
+            days=7,
             start_index=0,
             results_per_page=5
         )
@@ -698,7 +726,7 @@ def vulnerabilidades_por_ano(year):
     """Página listando vulnerabilidades de um ano específico com paginação"""
     try:
         page = int(request.args.get('page', 1))
-        per_page = 100  # Reduzir para paginação adequada
+        per_page = 20  # Reduzir para paginação adequada
         offset = (page - 1) * per_page
         
         # Buscar vulnerabilidades do ano específico
@@ -766,6 +794,94 @@ def vulnerabilidades_por_ano(year):
         logging.error(f"Erro ao buscar vulnerabilidades do ano {year}: {e}")
         flash(f'Erro ao carregar vulnerabilidades do ano {year}', 'error')
         return redirect(url_for('busca_por_ano'))
+
+@app.route('/noticias')
+def noticias():
+    """Página com as 5 notícias mais recentes de segurança cibernética"""
+    try:
+        news = get_recent_news(5)
+        return render_template('noticias.html', noticias=news)
+    except Exception as e:
+        logging.error(f"Erro ao carregar notícias: {e}")
+        flash('Erro ao carregar notícias', 'error')
+        return redirect(url_for('index'))
+
+@app.route('/ver-todas-noticias')
+def ver_todas_noticias():
+    """Página com todas as notícias do mês com paginação"""
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = 5
+        
+        all_news = get_month_news()
+        total_news = len(all_news)
+        
+        # Calcular paginação
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        news = all_news[start_idx:end_idx]
+        
+        total_pages = (total_news + per_page - 1) // per_page if total_news > 0 else 0
+        
+        return render_template('ver-todas-noticias.html', 
+                             noticias=news,
+                             page=page,
+                             total_pages=total_pages,
+                             total_news=total_news)
+    except Exception as e:
+        logging.error(f"Erro ao carregar notícias: {e}")
+        flash('Erro ao carregar notícias', 'error')
+        return redirect(url_for('index'))
+
+@app.route('/noticias/conteudo')
+def noticias_conteudo():
+    """Retorna o conteúdo completo de uma notícia"""
+    try:
+        link = request.args.get('link', '')
+        if not link:
+            return jsonify({'error': 'Link não fornecido'}), 400
+        
+        content = get_news_content(link)
+        return jsonify({'content': content})
+    except Exception as e:
+        logging.error(f"Erro ao buscar conteúdo da notícia: {e}")
+        return jsonify({'error': 'Erro ao carregar conteúdo'}), 500
+
+@app.route('/noticia/<slug>')
+def noticia_detalhes(slug):
+    """Página individual de notícia com slug amigável"""
+    try:
+        # Buscar notícia pelo slug
+        from advisor import advisor_monitor
+        news_list = advisor_monitor.load_news()
+        
+        noticia = None
+        for news in news_list:
+            if news.get('slug') == slug:
+                noticia = news
+                break
+        
+        if not noticia:
+            flash('Notícia não encontrada', 'error')
+            return redirect(url_for('noticias'))
+        
+        # Renderizar template individual da notícia
+        template_path = f'noticias/{slug}.html'
+        
+        # Verificar se o template existe
+        import os
+        full_template_path = os.path.join('templates', 'noticias', f'{slug}.html')
+        if not os.path.exists(full_template_path):
+            # Se o HTML não existe, gerar agora
+            logging.info(f"Gerando HTML para notícia: {slug}")
+            advisor_monitor.generate_news_html(noticia)
+        
+        # Renderizar template (HTML já está renderizado com os dados)
+        return render_template(template_path)
+    except Exception as e:
+        logging.error(f"Erro ao carregar notícia {slug}: {e}")
+        flash('Erro ao carregar notícia', 'error')
+        return redirect(url_for('noticias'))
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0', port=5000)

@@ -267,6 +267,10 @@ class SEOManager:
             {'loc': f"{self.base_url}/politica", 'priority': '0.6', 'changefreq': 'monthly'},
             {'loc': f"{self.base_url}/busca-por-ano", 'priority': '0.8', 'changefreq': 'weekly'},
             {'loc': f"{self.base_url}/5recentes", 'priority': '0.9', 'changefreq': 'daily'},
+            {'loc': f"{self.base_url}/noticias", 'priority': '0.9', 'changefreq': 'hourly'},
+            {'loc': f"{self.base_url}/ver-todas-noticias", 'priority': '0.8', 'changefreq': 'daily'},
+            {'loc': f"{self.base_url}/downloads", 'priority': '0.7', 'changefreq': 'monthly'},
+            {'loc': f"{self.base_url}/privacidade", 'priority': '0.6', 'changefreq': 'monthly'},
         ]
         
         # Buscar CVEs do banco de dados
@@ -316,6 +320,36 @@ class SEOManager:
                             'lastmod': datetime.now().strftime('%Y-%m-%d')
                         })
         
+        # Buscar URLs de notícias
+        news_urls = []
+        try:
+            import json
+            news_file = 'noticias_ciso.json'
+            if os.path.exists(news_file):
+                with open(news_file, 'r', encoding='utf-8') as f:
+                    news_data = json.load(f)
+                    for news in news_data:
+                        slug = news.get('slug', '')
+                        pub_date = news.get('pub_date', '')
+                        
+                        # Converter data de publicação
+                        try:
+                            from datetime import datetime, timedelta
+                            date_obj = datetime.strptime(pub_date.split('+')[0].strip(), '%a, %d %b %Y %H:%M:%S')
+                            lastmod = (date_obj - timedelta(hours=3)).strftime('%Y-%m-%d')
+                        except:
+                            lastmod = datetime.now().strftime('%Y-%m-%d')
+                        
+                        if slug:
+                            news_urls.append({
+                                'loc': f"{self.base_url}/noticia/{slug}",
+                                'priority': '0.7',
+                                'changefreq': 'weekly',
+                                'lastmod': lastmod
+                            })
+        except Exception as e:
+            print(f"Erro ao buscar notícias para sitemap: {e}")
+        
         # Gerar XML
         xml_content = ['<?xml version="1.0" encoding="UTF-8"?>']
         xml_content.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
@@ -327,6 +361,15 @@ class SEOManager:
             xml_content.append(f'    <priority>{url["priority"]}</priority>')
             xml_content.append(f'    <changefreq>{url["changefreq"]}</changefreq>')
             xml_content.append(f'    <lastmod>{datetime.now().strftime("%Y-%m-%d")}</lastmod>')
+            xml_content.append('  </url>')
+        
+        # Adicionar URLs de notícias
+        for url in news_urls:
+            xml_content.append('  <url>')
+            xml_content.append(f'    <loc>{url["loc"]}</loc>')
+            xml_content.append(f'    <priority>{url["priority"]}</priority>')
+            xml_content.append(f'    <changefreq>{url["changefreq"]}</changefreq>')
+            xml_content.append(f'    <lastmod>{url["lastmod"]}</lastmod>')
             xml_content.append('  </url>')
         
         # Adicionar URLs de CVEs

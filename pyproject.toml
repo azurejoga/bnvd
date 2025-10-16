@@ -1,14 +1,18 @@
 [project]
-name = "bnvd"
-version = "1.1"
-description = "bnvd.org"
+name = "bnvd3.0"
+version = "3.0"
+description = "bnvd"
 requires-python = ">=3.11"
 dependencies = [
+    "apscheduler>=3.11.0",
+    "beautifulsoup4>=4.14.2",
     "email-validator>=2.2.0",
     "flask>=3.1.1",
     "flask-sqlalchemy>=3.1.1",
     "googletrans==4.0.0rc1",
     "gunicorn>=23.0.0",
+    "lxml>=6.0.2",
+    "markupsafe>=3.0.2",
     "psycopg2-binary>=2.9.10",
     "python-dotenv>=1.1.1",
     "requests>=2.32.4",

@@ -1,0 +1,150 @@
+
+{% extends "base.html" %}
+
+{% block title %}Política de Privacidade - BNVD{% endblock %}
+{% block description %}Política de Privacidade do Banco Nacional de Vulnerabilidades Cibernéticas (BNVD) em conformidade com a LGPD.{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Início</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Política de Privacidade</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold text-primary mb-3">
+            <i class="fas fa-shield-alt me-3"></i>Política de Privacidade
+        </h1>
+        <p class="lead text-muted">
+            Última atualização: 16/10/2025 09:16
+        </p>
+    </div>
+
+    <!-- Content -->
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-5">
+                    <!-- Introdução -->
+                    <section class="mb-5">
+                        <h2 class="h4 text-primary mb-3">
+                            <i class="fas fa-info-circle me-2"></i>Introdução
+                        </h2>
+                        <p class="text-justify">
+                            O BNVD.org valoriza a privacidade e a segurança dos visitantes do site. Esta Política de Privacidade 
+                            explica como tratamos as informações dos usuários e reafirma nosso compromisso com a proteção de dados 
+                            pessoais, em conformidade com a <strong>Lei nº 13.709/2018 (Lei Geral de Proteção de Dados – LGPD)</strong>.
+                        </p>
+                    </section>
+
+                    <!-- Não Coleta de Dados -->
+                    <section class="mb-5">
+                        <h2 class="h4 text-primary mb-3">
+                            <i class="fas fa-ban me-2"></i>Não Coleta de Dados Pessoais
+                        </h2>
+                        <p class="text-justify">
+                            O BNVD.org <strong>não coleta, armazena nem compartilha nenhum dado pessoal</strong> dos visitantes. 
+                            Isso significa que:
+                        </p>
+                        <ul class="mb-3">
+                            <li>Não utilizamos formulários de cadastro ou login</li>
+                            <li>Não coletamos nomes, e-mails ou endereços IP</li>
+                            <li>Não utilizamos cookies de rastreamento</li>
+                            <li>Não realizamos qualquer tipo de monitoramento individualizado de navegação</li>
+                        </ul>
+                        <p class="text-justify">
+                            O site foi desenvolvido para oferecer <strong>acesso livre e anônimo</strong> a todas as informações disponibilizadas.
+                        </p>
+                    </section>
+
+                    <!-- Cookies -->
+                    <section class="mb-5">
+                        <h2 class="h4 text-primary mb-3">
+                            <i class="fas fa-cookie-bite me-2"></i>Cookies
+                        </h2>
+                        <p class="text-justify">
+                            Não utilizamos cookies próprios nem de terceiros para rastrear atividades, exibir anúncios personalizados 
+                            ou analisar comportamento dos visitantes.
+                        </p>
+                        <div class="alert alert-info" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Observação:</strong> Caso algum conteúdo externo, como vídeos incorporados ou links de parceiros, 
+                            seja exibido, esses serviços poderão usar seus próprios cookies. Recomendamos que o usuário consulte as 
+                            políticas de privacidade desses provedores.
+                        </div>
+                    </section>
+
+                    <!-- Links Externos -->
+                    <section class="mb-5">
+                        <h2 class="h4 text-primary mb-3">
+                            <i class="fas fa-external-link-alt me-2"></i>Links para Sites Externos
+                        </h2>
+                        <p class="text-justify">
+                            Nosso site pode conter links para outros domínios e plataformas, mas o BNVD.org 
+                            <strong>não se responsabiliza pelas práticas de privacidade ou pelo conteúdo de sites externos</strong>. 
+                            Recomendamos que o visitante leia as políticas de privacidade desses sites antes de interagir com eles.
+                        </p>
+                    </section>
+
+                    <!-- Segurança -->
+                    <section class="mb-5">
+                        <h2 class="h4 text-primary mb-3">
+                            <i class="fas fa-lock me-2"></i>Segurança da Informação
+                        </h2>
+                        <p class="text-justify">
+                            Embora não coletemos dados pessoais, mantemos <strong>boas práticas de segurança e infraestrutura digital</strong> 
+                            para garantir que o BNVD.org permaneça livre de vulnerabilidades e acessos indevidos. Utilizamos:
+                        </p>
+                        <ul class="mb-3">
+                            <li>Protocolos HTTPS para comunicação segura</li>
+                            <li>Monitoramento técnico para proteção do ambiente</li>
+                            <li>Atualizações regulares de segurança</li>
+                        </ul>
+                    </section>
+
+                    <!-- Contato -->
+                    <section class="mb-5">
+                        <h2 class="h4 text-primary mb-3">
+                            <i class="fas fa-envelope me-2"></i>Contato
+                        </h2>
+                        <p class="text-justify">
+                            Caso o visitante tenha dúvidas sobre esta Política de Privacidade ou sobre a forma como o BNVD.org opera, 
+                            pode entrar em contato pelo e-mail: 
+                            <a href="mailto:contato@bnvd.org" class="text-primary"><strong>contato@bnvd.org</strong></a>
+                        </p>
+                    </section>
+
+                    <!-- Atualizações -->
+                    <section class="mb-5">
+                        <h2 class="h4 text-primary mb-3">
+                            <i class="fas fa-sync-alt me-2"></i>Atualizações da Política
+                        </h2>
+                        <p class="text-justify">
+                            Podemos atualizar esta Política de Privacidade periodicamente para refletir melhorias técnicas ou alterações legais. 
+                            A data da última atualização estará sempre visível no início deste documento, e o uso contínuo do site após 
+                            eventuais mudanças significa que o visitante está ciente e de acordo com a versão mais recente da política.
+                        </p>
+                    </section>
+
+                    <!-- Compromisso -->
+                    <section>
+                        <div class="alert alert-success" role="alert">
+                            <h4 class="alert-heading">
+                                <i class="fas fa-check-circle me-2"></i>Nosso Compromisso
+                            </h4>
+                            <p class="mb-0">
+                                O BNVD.org reafirma seu compromisso com a <strong>privacidade, transparência e segurança digital</strong>, 
+                                oferecendo informação e conscientização em segurança cibernética sem comprometer a privacidade dos visitantes.
+                            </p>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

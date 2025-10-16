@@ -1,0 +1,86 @@
+{
+  "name": "BNVD - Banco Nacional de Vulnerabilidades Cibernéticas",
+  "short_name": "BNVD",
+  "description": "Banco Nacional de Vulnerabilidades Cibernéticas - A fonte confiável de vulnerabilidades de segurança no Brasil",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "scope": "/",
+  "id": "bnvd.org",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0d6efd",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/static/images/36/bnvd-logo.png",
+      "sizes": "36x36",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/images/48/bnvd-logo.png",
+      "sizes": "48x48",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/images/72/bnvd-logo.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/images/96/bnvd-logo.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/images/144/bnvd-logo.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/images/192/bnvd-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/images/512/bnvd-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/static/images/512/bnvd-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["security", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Buscar Vulnerabilidades",
+      "short_name": "Buscar",
+      "description": "Buscar vulnerabilidades CVE",
+      "url": "/busca",
+      "icons": [
+        {
+          "src": "/static/images/96/bnvd-logo.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Vulnerabilidades Recentes",
+      "short_name": "Recentes",
+      "description": "Ver vulnerabilidades recentes",
+      "url": "/recentes",
+      "icons": [
+        {
+          "src": "/static/images/96/bnvd-logo.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}

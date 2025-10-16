@@ -1,0 +1,136 @@
+
+{% extends "base.html" %}
+
+{% block title %}Downloads - Aplicativos BNVD para Android e Windows{% endblock %}
+{% block description %}Baixe o aplicativo BNVD para seu dispositivo Android ou PC Windows e tenha acesso às vulnerabilidades cibernéticas sempre à mão.{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Início</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Downloads</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold text-primary mb-3">
+            <i class="fas fa-download me-3"></i>Downloads
+        </h1>
+        <p class="lead text-muted">
+            Leve o BNVD para onde você estiver! Baixe nossos aplicativos e tenha acesso instantâneo 
+            às informações de segurança cibernética direto do seu dispositivo.
+        </p>
+    </div>
+
+    <!-- Apps Grid -->
+    <div class="row g-4 mb-5">
+        <!-- Android App -->
+        <div class="col-md-6">
+            <div class="card h-100 border-0 shadow-lg">
+                <div class="card-body text-center p-5">
+                    <div class="mb-4">
+                        <i class="fab fa-android fa-5x text-success"></i>
+                    </div>
+                    <h2 class="card-title h3 mb-3">BNVD para Android</h2>
+                    <p class="card-text text-muted mb-4">
+                        Acesse vulnerabilidades cibernéticas em tempo real direto do seu smartphone ou tablet Android. 
+                        Interface otimizada para dispositivos móveis com notificações de novas vulnerabilidades críticas.
+                    </p>
+                    <div class="mb-4">
+                        <h5 class="text-muted mb-3">Recursos:</h5>
+                        <ul class="list-unstyled text-start">
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Busca rápida de CVEs</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Mesmos recursos do site</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Interface responsiva</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Modo offline</li>
+                        </ul>
+                    </div>
+                    <a href="https://play.google.com/store/apps/details?id=bnvd.org" 
+                       target="_blank" 
+                       rel="noopener noreferrer" 
+                       class="btn btn-success btn-lg w-100">
+                        <i class="fab fa-google-play me-2"></i>Baixar na Google Play
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Windows App -->
+        <div class="col-md-6">
+            <div class="card h-100 border-0 shadow-lg">
+                <div class="card-body text-center p-5">
+                    <div class="mb-4">
+                        <i class="fab fa-windows fa-5x text-primary"></i>
+                    </div>
+                    <h2 class="card-title h3 mb-3">BNVD para Windows</h2>
+                    <p class="card-text text-muted mb-4">
+                        Aplicativo desktop completo para Windows com todas as funcionalidades do BNVD. 
+                        Perfeito para profissionais de segurança que precisam de acesso rápido às informações.
+                    </p>
+                    <div class="mb-4">
+                        <h5 class="text-muted mb-3">Recursos:</h5>
+                        <ul class="list-unstyled text-start">
+                            <li class="mb-2"><i class="fas fa-check-circle text-primary me-2"></i>Interface desktop completa</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-primary me-2"></i>Integração com Windows</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-primary me-2"></i>Mesmos recursos do site</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-primary me-2"></i>Modo offline</li>
+                        </ul>
+                    </div>
+                    <a href="https://apps.microsoft.com/store/detail/9P2S2GQVP264?cid=DevShareMCLPCS" 
+                       target="_blank" 
+                       rel="noopener noreferrer" 
+                       class="btn btn-primary btn-lg w-100">
+                        <i class="fab fa-microsoft me-2"></i>Baixar na Microsoft Store
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call to Action -->
+    <div class="alert alert-info border-0 shadow-sm" role="alert">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-star fa-2x text-warning me-3"></i>
+            <div>
+                <h4 class="alert-heading mb-2">Gostou dos nossos aplicativos?</h4>
+                <p class="mb-0">
+                    Sua avaliação é muito importante para nós! Se você está satisfeito com o BNVD, 
+                    por favor considere deixar uma avaliação positiva nas lojas. Isso nos ajuda a 
+                    continuar melhorando e alcançar mais pessoas interessadas em segurança cibernética.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <h3 class="text-center mb-4">Por que usar os aplicativos BNVD?</h3>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="text-center">
+                <i class="fas fa-mobile-alt fa-3x text-primary mb-3"></i>
+                <h5>Acesso em Qualquer Lugar</h5>
+                <p class="text-muted">Consulte vulnerabilidades onde quer que você esteja, sem depender de navegador.</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="text-center">
+                <i class="fas fa-sync-alt fa-3x text-success mb-3"></i>
+                <h5>Sincronização Automática</h5>
+                <p class="text-muted">Dados sempre atualizados com a base nacional de vulnerabilidades.</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="text-center">
+                <i class="fas fa-shield-alt fa-3x text-info mb-3"></i>
+                <h5>Seguro e Confiável</h5>
+                <p class="text-muted">Aplicativos desenvolvidos seguindo as melhores práticas de segurança.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

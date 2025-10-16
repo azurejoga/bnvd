@@ -145,6 +145,36 @@
         </div>
     </div>
 
+    <!-- Notícias de Segurança Cibernética -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm border-start border-success border-4">
+                <div class="card-body p-4 text-center">
+                    <h2 class="card-title text-success mb-3">
+                        <i class="fas fa-newspaper text-warning me-2"></i>
+                        Notícias de Segurança Cibernética
+                    </h2>
+                    <p class="text-muted mb-3">
+                        O BNVD.org agora também republica notícias de segurança cibernética! 
+                        Fique por dentro das últimas novidades e tendências em segurança da informação.
+                    </p>
+                    <p class="text-muted small mb-3">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Conteúdo fornecido por <strong>CISO Advisor</strong>
+                    </p>
+                    <div class="d-flex gap-3 justify-content-center flex-wrap">
+                        <a href="{{ url_for('noticias') }}" class="btn btn-success btn-lg">
+                            <i class="fas fa-eye me-2"></i>Ver as 5 Notícias Mais Recentes
+                        </a>
+                        <a href="{{ url_for('ver_todas_noticias') }}" class="btn btn-outline-success btn-lg">
+                            <i class="fas fa-list me-2"></i>Ver Todas as Notícias
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- O que são CVEs -->
     <div class="row">
         <div class="col-12">
