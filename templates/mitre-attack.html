@@ -1,0 +1,467 @@
+
+{% extends "base.html" %}
+
+{% block title %}MITRE ATT&CK - Matriz de Táticas e Técnicas - BNVD{% endblock %}
+{% block description %}Matriz MITRE ATT&CK traduzida para português com técnicas, subtécnicas, táticas, grupos de ameaças e mitigações{% endblock %}
+{% block keywords %}MITRE ATT&CK, táticas, técnicas, subtécnicas, grupos de ameaças, mitigações, segurança cibernética, tradução português{% endblock %}
+
+{% block og_title %}MITRE ATT&CK - Matriz de Táticas e Técnicas{% endblock %}
+{% block og_description %}Visualize a matriz MITRE ATT&CK completa traduzida para português com todas as técnicas, táticas e grupos de ameaças{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Cabeçalho -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-4 fw-bold text-primary mb-3">
+                <i class="fas fa-shield-alt me-3"></i>MITRE ATT&CK
+            </h1>
+            <p class="lead text-muted">
+                Matriz de Táticas, Técnicas e Conhecimentos do Adversário traduzida para português
+            </p>
+            
+            <!-- Informações sobre Traduções e Acessibilidade -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="card border-info h-100">
+                        <div class="card-body bg-light">
+                            <h5 class="card-title text-info">
+                                <i class="fas fa-language me-2"></i>Sobre as Traduções
+                            </h5>
+                            <p class="card-text mb-0">
+                                As traduções são carregadas automaticamente quando você expande cada item. 
+                                A tradução é feita por máquina e pode conter imprecisões técnicas. 
+                                Os textos originais em inglês estão sempre disponíveis para referência.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-success h-100">
+                        <div class="card-body bg-light">
+                            <h5 class="card-title text-success">
+                                <i class="fas fa-universal-access me-2"></i>Acessibilidade
+                            </h5>
+                            <ul class="mb-0 small">
+                                <li>Navegação por teclado em todas as funcionalidades</li>
+                                <li>Contraste adequado de cores para baixa visão</li>
+                                <li>Textos alternativos e labels ARIA para tecnologias assistivas</li>
+                                <li>Busca e filtragem para facilitar a navegação</li>
+                                <li>Accordions expansíveis para organização clara do conteúdo</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navegação entre Matrizes -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="btn-group" role="group" aria-label="Seleção de Matriz">
+                <a href="{{ url_for('mitre_attack', matrix='enterprise') }}" class="btn btn-outline-primary {% if current_matrix == 'enterprise' %}active{% endif %}">
+                    <i class="fas fa-desktop me-2"></i>Enterprise
+                </a>
+
+                <a href="{{ url_for('mitre_attack', matrix='mobile') }}" class="btn btn-outline-primary {% if current_matrix == 'mobile' %}active{% endif %}">
+                    <i class="fas fa-mobile-alt me-2"></i>Mobile
+                </a>
+
+                <a href="{{ url_for('mitre_attack', matrix='ics') }}" class="btn btn-outline-primary {% if current_matrix == 'ics' %}active{% endif %}">
+                    <i class="fas fa-industry me-2"></i>ICS
+                </a>
+
+                <a href="{{ url_for('mitre_attack', matrix='pre-attack') }}" class="btn btn-outline-primary {% if current_matrix == 'pre-attack' %}active{% endif %}">
+                    <i class="fas fa-crosshairs me-2"></i>Pre-ATT&CK
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards de Estatísticas -->
+    <div class="row mb-4">
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <i class="fas fa-bullseye fa-2x text-primary mb-2"></i>
+                    <h3 class="card-title">{{ matrix_data.total_tactics }}</h3>
+                    <p class="card-text text-muted">Táticas</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <i class="fas fa-crosshairs fa-2x text-success mb-2"></i>
+                    <h3 class="card-title">{{ matrix_data.total_techniques }}</h3>
+                    <p class="card-text text-muted">Técnicas</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <i class="fas fa-sitemap fa-2x text-success mb-2"></i>
+                    <h3 class="card-title">{{ matrix_data.total_subtechniques }}</h3>
+                    <p class="card-text text-muted">Subtécnicas</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="card border-warning">
+                <div class="card-body text-center">
+                    <i class="fas fa-users fa-2x text-warning mb-2"></i>
+                    <h3 class="card-title">{{ matrix_data.total_groups }}</h3>
+                    <p class="card-text text-muted">Grupos de Ameaças</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <i class="fas fa-shield fa-2x text-info mb-2"></i>
+                    <h3 class="card-title">{{ matrix_data.total_mitigations }}</h3>
+                    <p class="card-text text-muted">Mitigações</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Abas de Conteúdo -->
+    <ul class="nav nav-tabs mb-4" id="mitreTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="techniques-tab" data-bs-toggle="tab" data-bs-target="#techniques" type="button" role="tab" aria-controls="techniques" aria-selected="true">
+                <i class="fas fa-list me-2"></i>Técnicas ({{ matrix_data.total_techniques }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="subtechniques-tab" data-bs-toggle="tab" data-bs-target="#subtechniques" type="button" role="tab" aria-controls="subtechniques" aria-selected="false">
+                <i class="fas fa-sitemap me-2"></i>Subtécnicas ({{ matrix_data.total_subtechniques }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="matrix-tab" data-bs-toggle="tab" data-bs-target="#matrix" type="button" role="tab" aria-controls="matrix" aria-selected="false">
+                <i class="fas fa-th me-2"></i>Matriz Visual
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="groups-tab" data-bs-toggle="tab" data-bs-target="#groups" type="button" role="tab" aria-controls="groups" aria-selected="false">
+                <i class="fas fa-users-cog me-2"></i>Grupos ({{ matrix_data.total_groups }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="mitigations-tab" data-bs-toggle="tab" data-bs-target="#mitigations" type="button" role="tab" aria-controls="mitigations" aria-selected="false">
+                <i class="fas fa-shield-alt me-2"></i>Mitigações ({{ matrix_data.total_mitigations }})
+            </button>
+        </li>
+    </ul>
+
+    <!-- Conteúdo das Abas -->
+    <div class="tab-content" id="mitreTabContent">
+        <!-- Aba de Técnicas -->
+        <div class="tab-pane fade show active" id="techniques" role="tabpanel" aria-labelledby="techniques-tab">
+            <div class="mb-3">
+                <input type="text" class="form-control" id="searchTechniques" placeholder="Buscar técnicas..." onkeyup="filterAccordion('techniquesAccordion', this.value)">
+            </div>
+            <div class="accordion" id="techniquesAccordion">
+                {% for technique in matrix_data.techniques %}
+                <div class="accordion-item" data-search-text="{{ technique.id }} {{ technique.name }}">
+                    <h2 class="accordion-header" id="heading-tech-{{ loop.index }}">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-tech-{{ loop.index }}" aria-expanded="false" aria-controls="collapse-tech-{{ loop.index }}">
+                            <strong class="text-primary me-2">{{ technique.id }}</strong> {{ technique.name }}
+                        </button>
+                    </h2>
+                    <div id="collapse-tech-{{ loop.index }}" class="accordion-collapse collapse" aria-labelledby="heading-tech-{{ loop.index }}" data-bs-parent="#techniquesAccordion">
+                        <div class="accordion-body" data-item-info data-item-id="{{ technique.id }}" data-item-type="technique" data-original-text="{{ technique.name }}|{{ technique.description }}" data-tactics="{{ technique.tactics|join(',') }}">
+                            <p><strong>ID:</strong> {{ technique.id }}</p>
+                            <p><strong>Nome Original:</strong> {{ technique.name }}</p>
+                            <p><strong>Nome (PT):</strong> <span class="translated-name text-muted"><em>Carregando tradução...</em></span></p>
+                            <p><strong>Táticas:</strong> <span class="tactics-container">
+                                {% for tactic in technique.tactics %}
+                                <span class="badge bg-secondary tactic-badge" data-tactic="{{ tactic }}">{{ tactic }}</span>
+                                {% endfor %}
+                            </span></p>
+                            <p><strong>Descrição (PT):</strong> <span class="translated-desc text-muted"><em>Carregando tradução...</em></span></p>
+                            <p><strong>Link:</strong> <a href="{{ technique.url }}" target="_blank" rel="noopener noreferrer">{{ technique.url }}</a></p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Aba de Subtécnicas -->
+        <div class="tab-pane fade" id="subtechniques" role="tabpanel" aria-labelledby="subtechniques-tab">
+            <div class="mb-3">
+                <input type="text" class="form-control" id="searchSubtechniques" placeholder="Buscar subtécnicas..." onkeyup="filterAccordion('subtechniquesAccordion', this.value)">
+            </div>
+            <div class="accordion" id="subtechniquesAccordion">
+                {% for subtechnique in matrix_data.subtechniques %}
+                <div class="accordion-item" data-search-text="{{ subtechnique.id }} {{ subtechnique.name }}">
+                    <h2 class="accordion-header" id="heading-sub-{{ loop.index }}">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-sub-{{ loop.index }}" aria-expanded="false" aria-controls="collapse-sub-{{ loop.index }}">
+                            <strong class="text-primary me-2">{{ subtechnique.id }}</strong> {{ subtechnique.name }}
+                        </button>
+                    </h2>
+                    <div id="collapse-sub-{{ loop.index }}" class="accordion-collapse collapse" aria-labelledby="heading-sub-{{ loop.index }}" data-bs-parent="#subtechniquesAccordion">
+                        <div class="accordion-body" data-item-info data-item-id="{{ subtechnique.id }}" data-item-type="subtechnique" data-original-text="{{ subtechnique.name }}|{{ subtechnique.description }}" data-tactics="{{ subtechnique.tactics|join(',') }}">
+                            <p><strong>ID:</strong> {{ subtechnique.id }}</p>
+                            <p><strong>Nome Original:</strong> {{ subtechnique.name }}</p>
+                            <p><strong>Nome (PT):</strong> <span class="translated-name text-muted"><em>Carregando tradução...</em></span></p>
+                            <p><strong>Táticas:</strong> <span class="tactics-container">
+                                {% for tactic in subtechnique.tactics %}
+                                <span class="badge bg-secondary tactic-badge" data-tactic="{{ tactic }}">{{ tactic }}</span>
+                                {% endfor %}
+                            </span></p>
+                            <p><strong>Descrição (PT):</strong> <span class="translated-desc text-muted"><em>Carregando tradução...</em></span></p>
+                            <p><strong>Link:</strong> <a href="{{ subtechnique.url }}" target="_blank" rel="noopener noreferrer">{{ subtechnique.url }}</a></p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Aba de Matriz Visual -->
+        <div class="tab-pane fade" id="matrix" role="tabpanel" aria-labelledby="matrix-tab">
+            <div class="row">
+                {% for tactic in matrix_data.tactics %}
+                <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="card-title mb-0">
+                                {{ tactic.name }}<br>
+                                <small>{{ tactic.name_pt }}</small>
+                            </h5>
+                        </div>
+                        <div class="card-body p-2">
+                            <ul class="list-group list-group-flush">
+                                {% for technique in matrix_data.techniques_by_tactic.get(tactic.shortname, []) %}
+                                <li class="list-group-item p-1">
+                                    <small>
+                                        <strong>{{ technique.id }}</strong><br>
+                                        {{ technique.name_pt }}
+                                    </small>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Aba de Grupos -->
+        <div class="tab-pane fade" id="groups" role="tabpanel" aria-labelledby="groups-tab">
+            <div class="mb-3">
+                <input type="text" class="form-control" id="searchGroups" placeholder="Buscar grupos..." onkeyup="filterAccordion('groupsAccordion', this.value)">
+            </div>
+            <div class="accordion" id="groupsAccordion">
+                {% for group in matrix_data.groups %}
+                <div class="accordion-item" data-search-text="{{ group.id }} {{ group.name }}">
+                    <h2 class="accordion-header" id="heading-group-{{ loop.index }}">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-group-{{ loop.index }}" aria-expanded="false" aria-controls="collapse-group-{{ loop.index }}">
+                            <strong class="text-primary me-2">{{ group.id }}</strong> {{ group.name }}
+                        </button>
+                    </h2>
+                    <div id="collapse-group-{{ loop.index }}" class="accordion-collapse collapse" aria-labelledby="heading-group-{{ loop.index }}" data-bs-parent="#groupsAccordion">
+                        <div class="accordion-body" data-item-info data-item-id="{{ group.id }}" data-item-type="group" data-original-text="{{ group.name }}|{{ group.description }}">
+                            <p><strong>ID:</strong> {{ group.id }}</p>
+                            <p><strong>Nome Original:</strong> {{ group.name }}</p>
+                            <p><strong>Nome (PT):</strong> <span class="translated-name text-muted"><em>Carregando tradução...</em></span></p>
+                            <p><strong>Descrição (PT):</strong> <span class="translated-desc text-muted"><em>Carregando tradução...</em></span></p>
+                            <p><strong>Link:</strong> <a href="{{ group.url }}" target="_blank" rel="noopener noreferrer">{{ group.url }}</a></p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Aba de Mitigações -->
+        <div class="tab-pane fade" id="mitigations" role="tabpanel" aria-labelledby="mitigations-tab">
+            <div class="mb-3">
+                <input type="text" class="form-control" id="searchMitigations" placeholder="Buscar mitigações..." onkeyup="filterAccordion('mitigationsAccordion', this.value)">
+            </div>
+            <div class="accordion" id="mitigationsAccordion">
+                {% for mitigation in matrix_data.mitigations %}
+                <div class="accordion-item" data-search-text="{{ mitigation.id }} {{ mitigation.name }}">
+                    <h2 class="accordion-header" id="heading-mit-{{ loop.index }}">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-mit-{{ loop.index }}" aria-expanded="false" aria-controls="collapse-mit-{{ loop.index }}">
+                            <strong class="text-primary me-2">{{ mitigation.id }}</strong> {{ mitigation.name }}
+                        </button>
+                    </h2>
+                    <div id="collapse-mit-{{ loop.index }}" class="accordion-collapse collapse" aria-labelledby="heading-mit-{{ loop.index }}" data-bs-parent="#mitigationsAccordion">
+                        <div class="accordion-body" data-item-info data-item-id="{{ mitigation.id }}" data-item-type="mitigation" data-original-text="{{ mitigation.name }}|{{ mitigation.description }}">
+                            <p><strong>ID:</strong> {{ mitigation.id }}</p>
+                            <p><strong>Nome Original:</strong> {{ mitigation.name }}</p>
+                            <p><strong>Nome (PT):</strong> <span class="translated-name text-muted"><em>Carregando tradução...</em></span></p>
+                            <p><strong>Descrição (PT):</strong> <span class="translated-desc text-muted"><em>Carregando tradução...</em></span></p>
+                            <p><strong>Link:</strong> <a href="{{ mitigation.url }}" target="_blank" rel="noopener noreferrer">{{ mitigation.url }}</a></p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    </div>
+
+<script>
+// Cache de traduções carregadas
+const translationCache = new Set();
+
+// Função para carregar tradução sob demanda
+async function loadTranslation(collapseElement) {
+    const itemData = collapseElement.querySelector('[data-item-info]');
+    if (!itemData) return;
+    
+    const itemId = itemData.getAttribute('data-item-id');
+    const itemType = itemData.getAttribute('data-item-type');
+    const originalText = itemData.getAttribute('data-original-text');
+    const tacticsStr = itemData.getAttribute('data-tactics');
+    const tactics = tacticsStr ? tacticsStr.split(',').filter(t => t.trim()) : [];
+    const cacheKey = `${itemType}-${itemId}`;
+    
+    // Se já foi traduzido, não faz nada
+    if (translationCache.has(cacheKey)) {
+        return;
+    }
+    
+    try {
+        // Fazer requisição para traduzir
+        const response = await fetch('/api/mitre/translate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                text: originalText,
+                item_id: itemId,
+                item_type: itemType,
+                tactics: tactics
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            // Atualizar elementos com tradução
+            const nameElement = itemData.querySelector('.translated-name');
+            const descElement = itemData.querySelector('.translated-desc');
+            
+            if (nameElement && data.name_pt) {
+                nameElement.innerHTML = data.name_pt;
+                nameElement.classList.remove('text-muted');
+            }
+            if (descElement && data.description_pt) {
+                descElement.innerHTML = data.description_pt;
+                descElement.classList.remove('text-muted');
+            }
+            
+            // Atualizar táticas traduzidas
+            if (data.tactics_pt && data.tactics_pt.length > 0) {
+                const tacticBadges = itemData.querySelectorAll('.tactic-badge');
+                tacticBadges.forEach((badge, index) => {
+                    if (index < data.tactics_pt.length) {
+                        const originalTactic = badge.getAttribute('data-tactic');
+                        badge.innerHTML = data.tactics_pt[index];
+                        badge.title = originalTactic; // Manter original no tooltip
+                    }
+                });
+            }
+            
+            // Marcar como traduzido
+            translationCache.add(cacheKey);
+        }
+    } catch (error) {
+        console.error('Erro ao carregar tradução:', error);
+        const nameElement = itemData.querySelector('.translated-name');
+        const descElement = itemData.querySelector('.translated-desc');
+        if (nameElement) nameElement.innerHTML = '<em class="text-danger">Erro ao carregar tradução</em>';
+        if (descElement) descElement.innerHTML = '<em class="text-danger">Erro ao carregar tradução</em>';
+    }
+}
+
+// Adicionar listeners aos accordions para traduzir quando expandir
+document.addEventListener('DOMContentLoaded', function() {
+    // Usar evento do Bootstrap para detectar quando accordion é expandido
+    document.querySelectorAll('.accordion-collapse').forEach(collapse => {
+        collapse.addEventListener('shown.bs.collapse', function() {
+            loadTranslation(this);
+        });
+    });
+    
+    // Focar no campo de busca com Ctrl+F
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+            e.preventDefault();
+            const activeTab = document.querySelector('.tab-pane.active');
+            const searchInput = activeTab ? activeTab.querySelector('input[type="text"]') : null;
+            if (searchInput) {
+                searchInput.focus();
+            }
+        }
+    });
+});
+
+// Função para filtrar accordions
+function filterAccordion(accordionId, searchValue) {
+    const accordion = document.getElementById(accordionId);
+    if (!accordion) return;
+    
+    const items = accordion.getElementsByClassName('accordion-item');
+    const filter = searchValue.toUpperCase();
+
+    for (let i = 0; i < items.length; i++) {
+        let searchText = items[i].getAttribute('data-search-text') || '';
+        if (searchText.toUpperCase().indexOf(filter) > -1) {
+            items[i].style.display = '';
+        } else {
+            items[i].style.display = 'none';
+        }
+    }
+}
+</script>
+
+<style>
+/* Melhorias de acessibilidade */
+.accordion-button:focus {
+    outline: 2px solid #0d6efd;
+    outline-offset: 2px;
+}
+
+.accordion-button {
+    font-size: 0.95rem;
+}
+
+.accordion-body {
+    font-size: 0.9rem;
+}
+
+.btn:focus, .nav-link:focus, .form-control:focus {
+    outline: 2px solid #0d6efd;
+    outline-offset: 2px;
+}
+
+/* Alto contraste para melhor legibilidade */
+.badge {
+    font-weight: 600;
+    padding: 0.35em 0.65em;
+}
+
+/* Responsividade aprimorada */
+@media (max-width: 768px) {
+    .accordion-button {
+        font-size: 0.85rem;
+    }
+    
+    .display-4 {
+        font-size: 2rem;
+    }
+}
+</style>
+{% endblock %}

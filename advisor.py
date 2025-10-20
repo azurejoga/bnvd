@@ -139,7 +139,7 @@ class CISOAdvisorMonitor:
             return '/noticias'
         # Para detalhes de notícias, formatamos com o slug.
         if endpoint == 'noticia_detalhes' and 'slug' in kwargs:
-            return f"/noticias/{kwargs['slug']}"
+            return f"/noticia/{kwargs['slug']}"
         return '#' # Fallback
 
     def generate_news_html(self, news_item: Dict) -> str:
@@ -241,7 +241,7 @@ class CISOAdvisorMonitor:
         </div>
 
         <!-- Botões de Ação -->
-        <div class="d-flex gap-3 mb-4 pb-4 border-bottom">
+        <div class="d-flex gap-3 mb-4 pb-4 border-bottom flex-wrap">
             <button onclick="compartilharNoticia()" class="btn btn-primary">
                 <i class="fas fa-share-alt me-2"></i>Compartilhar
             </button>
@@ -251,6 +251,37 @@ class CISOAdvisorMonitor:
             <a href="{{{{ url_for('noticias') }}}}" class="btn btn-outline-primary">
                 <i class="fas fa-arrow-left me-2"></i>Voltar para Notícias
             </a>
+            
+            <!-- Botão de Exportação -->
+            <div class="dropdown">
+                <button class="btn btn-success dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-download me-2"></i>Exportar Notícia
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="exportDropdown">
+                    <li><h6 class="dropdown-header"><i class="fas fa-file-export me-2"></i>Escolha o formato</h6></li>
+                    <li><a class="dropdown-item" href="{{{{ url_for('export_news', slug='{slug}', format='csv') }}}}">
+                        <i class="fas fa-file-csv me-2"></i>CSV
+                    </a></li>
+                    <li><a class="dropdown-item" href="{{{{ url_for('export_news', slug='{slug}', format='json') }}}}">
+                        <i class="fas fa-file-code me-2"></i>JSON
+                    </a></li>
+                    <li><a class="dropdown-item" href="{{{{ url_for('export_news', slug='{slug}', format='pdf') }}}}">
+                        <i class="fas fa-file-pdf me-2"></i>PDF
+                    </a></li>
+                    <li><a class="dropdown-item" href="{{{{ url_for('export_news', slug='{slug}', format='txt') }}}}">
+                        <i class="fas fa-file-alt me-2"></i>TXT
+                    </a></li>
+                    <li><a class="dropdown-item" href="{{{{ url_for('export_news', slug='{slug}', format='docx') }}}}">
+                        <i class="fas fa-file-word me-2"></i>DOCX
+                    </a></li>
+                    <li><a class="dropdown-item" href="{{{{ url_for('export_news', slug='{slug}', format='xml') }}}}">
+                        <i class="fas fa-file-code me-2"></i>XML
+                    </a></li>
+                    <li><a class="dropdown-item" href="{{{{ url_for('export_news', slug='{slug}', format='odf') }}}}">
+                        <i class="fas fa-file me-2"></i>ODF
+                    </a></li>
+                </ul>
+            </div>
         </div>
 
         <!-- Créditos -->
@@ -650,6 +681,26 @@ def get_recent_news(limit: int = 5) -> List[Dict]:
 def get_month_news() -> List[Dict]:
     """Função helper para obter notícias do mês"""
     return advisor_monitor.get_month_news()
+
+def get_all_news() -> List[Dict]:
+    """Função helper para obter todas as notícias"""
+    news = advisor_monitor.load_news()
+    # Adicionar data formatada para todas as notícias
+    for item in news:
+        if 'pub_date_formatted' not in item or not item['pub_date_formatted']:
+            item['pub_date_formatted'] = advisor_monitor.format_date_brazilian(item.get('pub_date', ''))
+    return news
+
+def get_news_by_slug(slug: str) -> Optional[Dict]:
+    """Função helper para obter uma notícia específica pelo slug"""
+    news = advisor_monitor.load_news()
+    for item in news:
+        if item.get('slug') == slug:
+            # Adicionar data formatada se não existir
+            if 'pub_date_formatted' not in item or not item['pub_date_formatted']:
+                item['pub_date_formatted'] = advisor_monitor.format_date_brazilian(item.get('pub_date', ''))
+            return item
+    return None
 
 def get_news_content(link: str) -> str:
     """Função helper para obter conteúdo de uma notícia específica"""

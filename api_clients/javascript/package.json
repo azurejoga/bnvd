@@ -1,0 +1,36 @@
+{
+  "name": "bnvd-api-client",
+  "version": "1.0.0",
+  "description": "Cliente oficial da API do Banco Nacional de Vulnerabilidades Cibernéticas (BNVD)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepublish": "npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "bnvd",
+    "vulnerabilities",
+    "security",
+    "cve",
+    "nvd",
+    "cybersecurity",
+    "api-client"
+  ],
+  "author": "BNVD Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/azurejoga/bnvd.git",
+    "directory": "api_clients/javascript"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {},
+  "peerDependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

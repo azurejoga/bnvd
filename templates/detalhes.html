@@ -443,7 +443,7 @@
             {% endif %}
             
             <!-- Ações -->
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm mb-3">
                 <div class="card-body text-center">
                     <h6 class="card-title">Compartilhar</h6>
                     <div class="d-grid gap-2">
@@ -453,6 +453,44 @@
                         <button class="btn btn-outline-secondary btn-sm" onclick="copyToClipboard('{{ url_for('detalhes', cve_id=cve.id, _external=True) }}')">
                             <i class="fas fa-copy me-1"></i>Copiar Link
                         </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Exportar -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title text-center mb-3">
+                        <i class="fas fa-download me-1"></i>Exportar
+                    </h6>
+                    <button class="btn btn-primary btn-sm w-100 mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#exportOptions" aria-expanded="false" aria-controls="exportOptions">
+                        <i class="fas fa-file-export me-1"></i>Escolher Formato
+                        <i class="fas fa-chevron-down ms-1"></i>
+                    </button>
+                    <div class="collapse" id="exportOptions">
+                        <div class="d-grid gap-1 mt-2">
+                            <a href="{{ url_for('export_vulnerability', cve_id=cve.id, format='csv') }}" class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-file-csv me-1"></i>CSV
+                            </a>
+                            <a href="{{ url_for('export_vulnerability', cve_id=cve.id, format='json') }}" class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-code me-1"></i>JSON
+                            </a>
+                            <a href="{{ url_for('export_vulnerability', cve_id=cve.id, format='pdf') }}" class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-file-pdf me-1"></i>PDF
+                            </a>
+                            <a href="{{ url_for('export_vulnerability', cve_id=cve.id, format='txt') }}" class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-file-alt me-1"></i>TXT
+                            </a>
+                            <a href="{{ url_for('export_vulnerability', cve_id=cve.id, format='docx') }}" class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-file-word me-1"></i>DOCX
+                            </a>
+                            <a href="{{ url_for('export_vulnerability', cve_id=cve.id, format='xml') }}" class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-file-code me-1"></i>XML
+                            </a>
+                            <a href="{{ url_for('export_vulnerability', cve_id=cve.id, format='odf') }}" class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-file me-1"></i>ODF
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>

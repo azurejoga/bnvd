@@ -3,6 +3,7 @@ import json
 import logging
 from flask import Flask, render_template, request, redirect, url_for, flash, Response, jsonify
 from dotenv import load_dotenv
+from werkzeug.middleware.proxy_fix import ProxyFix
 from nvd_api import NVDClient
 from utils import (translate_severity, translate_cwe, translate_cvss_metrics, format_date, paginate_results,
                  extract_cvss_score, extract_severity, extract_vector_string, 
@@ -11,17 +12,23 @@ from translator import DatabaseTranslator
 from vulns import VulnerabilityDatabase
 from seo import SEOManager, init_seo_routes
 from security import security_manager
-from werkzeug.middleware.proxy_fix import ProxyFix                                                                      
 
 # Carregar variáveis de ambiente
 load_dotenv()
 
 # Configurar logging
 logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__) # Renomeado para logger para consistência
 
 # Criar aplicação Flask
 app = Flask(__name__)
-app.secret_key = os.environ.get("SESSION_SECRET", "fallback-secret-key-for-dev")
+app.secret_key = os.environ.get("SESSION_SECRET")
+if not app.secret_key:
+    import secrets
+    app.secret_key = secrets.token_hex(32)
+    logging.warning("SESSION_SECRET não configurado - usando chave gerada aleatoriamente para esta sessão")
+
+# Configurar ProxyFix para HTTPS
 app.config['PREFERRED_URL_SCHEME'] = 'https'
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
@@ -41,7 +48,7 @@ if not database_url or database_url.strip() == "":
     pguser = os.environ.get("PGUSER", "").strip()
     pgpassword = os.environ.get("PGPASSWORD", "").strip()
     pgdatabase = os.environ.get("PGDATABASE", "").strip()
-    
+
     if pghost and pgport and pguser and pgdatabase:
         database_url = f"postgresql://{pguser}:{pgpassword}@{pghost}:{pgport}/{pgdatabase}"
         logging.info("DATABASE_URL construída a partir das variáveis PostgreSQL individuais")
@@ -59,17 +66,17 @@ if database_url:
 else:
     # Criar um tradutor simples sem banco para desenvolvimento
     from translator import DatabaseTranslator
-    
+
     class SimpleTranslator:
         def translate_text(self, text, target_lang='pt'):
             return text  # Retorna texto original sem tradução
-        
+
         def force_translate_text(self, text, target_lang='pt'):
             return text  # Retorna texto original sem tradução
-        
+
         def translate_cve_description(self, text):
             return text  # Retorna texto original sem tradução
-    
+
     translator = SimpleTranslator()
     logging.warning("Sistema de tradução simples inicializado (sem banco)")
 
@@ -91,6 +98,27 @@ try:
 except Exception as e:
     logging.error(f"Erro ao inicializar sistema de notícias: {e}")
 
+# Inicializar processador MITRE ATT&CK com tradutor dedicado
+from mitre_translate import initialize_mitre_translator, mitre_translator
+from mitre import initialize_mitre, mitre_processor
+
+# Variável global para armazenar o processador
+mitre_proc = None
+
+try:
+    # Criar tradutor dedicado para MITRE
+    mt = initialize_mitre_translator(database_url)
+    initialize_mitre(mt)
+    
+    # Importar novamente para pegar a instância inicializada
+    from mitre import mitre_processor as mp
+    mitre_proc = mp
+    
+    logging.info("Processador MITRE ATT&CK inicializado com tradutor dedicado")
+except Exception as e:
+    logging.error(f"Erro ao inicializar MITRE ATT&CK: {e}")
+    mitre_proc = None
+
 @app.route('/')
 def index():
     """Página inicial do BNVD"""
@@ -111,71 +139,71 @@ def busca():
     """Página de busca de vulnerabilidades"""
     # Sanitizar e validar todos os parâmetros da requisição
     secure_params = security_manager.secure_request_params(request.args)
-    
+
     # Verificar tentativas de ataque nos parâmetros brutos
     for param_name, param_value in request.args.items():
         if security_manager.detect_sql_injection(str(param_value)):
             logging.warning(f"SQL injection detectado: {param_name}={param_value}")
             flash("Parâmetros de entrada inválidos detectados.", "error")
             return render_template('busca.html', error_message="Parâmetros de entrada inválidos")
-        
+
         if security_manager.detect_xss(str(param_value)):
             logging.warning(f"XSS detectado: {param_name}={param_value}")
             flash("Parâmetros de entrada inválidos detectados.", "error")
             return render_template('busca.html', error_message="Parâmetros de entrada inválidos")
-    
+
     # Obter parâmetros seguros
     cve_id = secure_params.get('cve_id', '')
     severidade = secure_params.get('severidade', '')
     vendor = secure_params.get('vendor', '')
-    
+
     # Paginação segura
     page = secure_params.get('page', 1)
     per_page = min(secure_params.get('per_page', 20), 20)  # Limitar a 20 para performance
     start_index = (page - 1) * per_page
-    
+
     # Inicializar variáveis
     vulnerabilidades = []
     total_results = 0
     error_message = None
-    
+
     # Verificar se há filtros de busca (removidos ano e keyword)
     has_filters = any([cve_id, severidade, vendor])
-    
+
     try:
         # Construir parâmetros básicos da API
         search_params = {}
         search_params['resultsPerPage'] = 20
         search_params['startIndex'] = start_index
-        
+
         # Aplicar filtros (já validados pelo sistema de segurança)
         if cve_id:
             search_params['cveId'] = cve_id  # Já vem validado e formatado
-        
+
         if severidade:
             search_params['cvssV3Severity'] = severidade  # Já validado
-        
+
         if vendor:
             search_params['keywordSearch'] = vendor  # Já sanitizado
             logging.debug(f"Busca por fabricante: {vendor}")
-        
+
         # Buscar vulnerabilidades apenas se há filtros
         response = None
         if has_filters:
             logging.debug(f"Parâmetros da busca: {search_params}")
             response = nvd_client.search_cves(**search_params)
-            
+
             # Log da resposta para debug
             if response:
                 total_results = response.get('totalResults', 0)
                 logging.info(f"API NVD retornou {total_results} resultados para os parâmetros: {search_params}")
             else:
                 logging.warning("API NVD retornou resposta vazia ou nula")
-        
+
         if response and 'vulnerabilities' in response and len(response['vulnerabilities']) > 0:
             vulnerabilidades = response['vulnerabilities']
             total_results = response.get('totalResults', 0)
-            
+
             # Traduzir TODAS as descrições das vulnerabilidades encontradas (COMPLETAS)
             for vuln in vulnerabilidades:
                 if 'cve' in vuln and 'descriptions' in vuln['cve']:
@@ -190,7 +218,7 @@ def busca():
                             except Exception as e:
                                 logging.warning(f"Erro na tradução: {e}")
                                 desc['value_pt'] = desc['value']  # Fallback para original
-            
+
             if total_results > 0:
                 flash(f"Encontrados {total_results:,} resultados", "success")
             else:
@@ -200,15 +228,15 @@ def busca():
             total_results = 0
             error_message = "Nenhuma vulnerabilidade encontrada para os critérios especificados."
             flash("Nenhum resultado encontrado. Tente ajustar os filtros de busca ou tentar novamente.", "warning")
-            
+
     except Exception as e:
         logging.error(f"Erro na busca: {str(e)}")
         error_message = f"Erro ao buscar vulnerabilidades: {str(e)}"
         flash("Erro interno na busca. Tente novamente.", "error")
-    
+
     # Calcular informações de paginação
     total_pages = (total_results + per_page - 1) // per_page if total_results > 0 else 0
-    
+
     return render_template('busca.html', 
                          vulnerabilidades=vulnerabilidades,
                          total_results=total_results,
@@ -227,10 +255,10 @@ def detalhes(cve_id):
     try:
         # Buscar dados da vulnerabilidade (sistema automaticamente verifica banco e API)
         response = nvd_client.get_cve(cve_id)
-        
+
         if response and 'vulnerabilities' in response and len(response['vulnerabilities']) > 0:
             vulnerabilidade = response['vulnerabilities'][0]
-            
+
             # Traduzir descrições para português
             if 'cve' in vulnerabilidade and 'descriptions' in vulnerabilidade['cve']:
                 for desc in vulnerabilidade['cve']['descriptions']:
@@ -243,11 +271,11 @@ def detalhes(cve_id):
                         except Exception as e:
                             logging.error(f"Erro na tradução dos detalhes para {cve_id}: {e}")
                             desc['value_pt'] = desc['value']  # Fallback para original
-            
+
             # Traduzir tags das referências se existirem
             if 'cve' in vulnerabilidade:
                 cve_data = vulnerabilidade['cve']
-                
+
                 if 'references' in cve_data and 'reference_data' in cve_data['references']:
                     for ref in cve_data['references']['reference_data']:
                         if 'tags' in ref and ref['tags']:
@@ -260,13 +288,13 @@ def detalhes(cve_id):
                             except Exception as e:
                                 logging.warning(f"Erro na tradução das tags: {e}")
                                 ref['tags_pt'] = ref['tags']
-            
+
             # Renderizar template com dados traduzidos
             return render_template('detalhes.html', vuln=vulnerabilidade)
         else:
             flash(f"Vulnerabilidade {cve_id} não encontrada.", "error")
             return redirect(url_for('busca'))
-            
+
     except Exception as e:
         logging.error(f"Erro ao buscar CVE {cve_id}: {str(e)}")
         flash(f"Erro ao carregar vulnerabilidade: {str(e)}", "error")
@@ -303,7 +331,88 @@ def api_docs():
     """Página de documentação da API"""
     return render_template('api-docs.html')
 
+@app.route('/api/mitre/translate', methods=['POST'])
+def translate_mitre_item():
+    """API para traduzir itens MITRE sob demanda"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'text' not in data:
+            return jsonify({'error': 'Texto não fornecido'}), 400
+        
+        text = data['text']
+        item_id = data.get('item_id', '')
+        item_type = data.get('item_type', '')
+        tactics = data.get('tactics', [])  # Receber táticas para traduzir
+        
+        # Dividir texto em nome e descrição se necessário
+        parts = text.split('|')
+        name = parts[0] if len(parts) > 0 else ''
+        description = parts[1] if len(parts) > 1 else ''
+        
+        # Traduzir usando o tradutor MITRE
+        from mitre_translate import mitre_translator
+        
+        result = {
+            'item_id': item_id,
+            'item_type': item_type
+        }
+        
+        if name and mitre_translator:
+            result['name_pt'] = mitre_translator.translate_text(name)
+        
+        if description and mitre_translator:
+            # Traduzir descrição completa
+            result['description_pt'] = mitre_translator.translate_text(description)
+        
+        # Traduzir táticas
+        if tactics and mitre_translator:
+            tactics_pt = []
+            for tactic in tactics:
+                if tactic:
+                    tactic_pt = mitre_translator.translate_text(tactic)
+                    tactics_pt.append(tactic_pt)
+            result['tactics_pt'] = tactics_pt
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Erro ao traduzir item MITRE: {e}")
+        return jsonify({'error': str(e)}), 500
 
+@app.route('/mitre-attack')
+def mitre_attack():
+    """Página da matriz MITRE ATT&CK"""
+    try:
+        # Verificar se mitre_processor foi inicializado
+        if not mitre_proc:
+            logger.error("MITRE processor não inicializado")
+            flash('Sistema MITRE ATT&CK não disponível no momento.', 'warning')
+            return redirect(url_for('index'))
+
+        # Obter tipo de matriz do parâmetro (padrão: enterprise)
+        matrix_type = request.args.get('matrix', 'enterprise')
+
+        # Validar tipo de matriz
+        valid_matrices = ['enterprise', 'mobile', 'ics', 'pre-attack']
+        if matrix_type not in valid_matrices:
+            matrix_type = 'enterprise'
+
+        # Obter dados da matriz (sempre com tradução)
+        logger.info(f"Carregando matriz {matrix_type}...")
+        matrix_data = mitre_proc.get_matrix_data(matrix_type, translate=True)
+
+        # Log das estatísticas
+        logger.info(f"Matriz {matrix_type}: {matrix_data.get('total_techniques')} técnicas, {matrix_data.get('total_subtechniques')} subtécnicas, {matrix_data.get('total_groups')} grupos, {matrix_data.get('total_mitigations')} mitigações")
+
+        return render_template('mitre-attack.html', 
+                             matrix_data=matrix_data,
+                             current_matrix=matrix_type,
+                             page_title=f'MITRE ATT&CK - {matrix_type.title()}')
+    except Exception as e:
+        logger.error(f"Erro ao carregar MITRE ATT&CK: {e}")
+        flash('Erro ao carregar matriz MITRE ATT&CK.', 'error')
+        return redirect(url_for('index'))
 
 
 
@@ -316,13 +425,13 @@ def api_recent_cves():
         per_page = min(int(request.args.get('per_page', 10)), 10)  # Limite menor sem token
         start_index = (page - 1) * per_page
         include_pt = request.args.get('include_pt', 'false').lower() == 'true'
-        
+
         response = nvd_client.get_recent_cves(
             days=days,
             start_index=start_index,
             results_per_page=per_page
         )
-        
+
         if response:
             # Adicionar traduções portuguesas se solicitado
             if include_pt and 'vulnerabilities' in response:
@@ -336,13 +445,13 @@ def api_recent_cves():
                                 except Exception as e:
                                     logging.warning(f"Erro na tradução da API: {e}")
                                     desc['value_pt'] = desc['value']
-            
+
             # Adicionar aviso sobre limitações
             response['api_notice'] = 'API pública limitada a 10 resultados. Para acesso completo, use /api/token/<seu_token>/recent'
             return response
         else:
             return {'error': 'Nenhum resultado encontrado'}, 404
-            
+
     except Exception as e:
         logging.error(f"Erro na API de CVEs recentes: {str(e)}")
         return {'error': str(e)}, 500
@@ -355,12 +464,12 @@ def api_kev_cves():
         per_page = min(int(request.args.get('per_page', 10)), 10)  # Limite menor sem token
         start_index = (page - 1) * per_page
         include_pt = request.args.get('include_pt', 'false').lower() == 'true'
-        
+
         response = nvd_client.get_kev_cves(
             start_index=start_index,
             results_per_page=per_page
         )
-        
+
         if response:
             # Adicionar traduções portuguesas se solicitado
             if include_pt and 'vulnerabilities' in response:
@@ -374,13 +483,13 @@ def api_kev_cves():
                                 except Exception as e:
                                     logging.warning(f"Erro na tradução da API: {e}")
                                     desc['value_pt'] = desc['value']
-            
+
             # Adicionar aviso sobre limitações
             response['api_notice'] = 'API pública limitada a 10 resultados. Para acesso completo, use /api/token/<seu_token>/kev'
             return response
         else:
             return {'error': 'Nenhum resultado encontrado'}, 404
-            
+
     except Exception as e:
         logging.error(f"Erro na API de CVEs KEV: {str(e)}")
         return {'error': str(e)}, 500
@@ -392,20 +501,20 @@ def recentes():
         page = int(request.args.get('page', 1))
         per_page = 20
         start_index = (page - 1) * per_page
-        
+
         response = nvd_client.get_recent_cves(
             days=7,
             start_index=start_index,
             results_per_page=per_page
         )
-        
+
         vulnerabilidades = []
         total_results = 0
-        
+
         if response and 'vulnerabilities' in response:
             vulnerabilidades = response['vulnerabilities']
             total_results = response.get('totalResults', 0)
-            
+
             # Traduzir descrições
             for vuln in vulnerabilidades:
                 if 'cve' in vuln and 'descriptions' in vuln['cve']:
@@ -417,16 +526,16 @@ def recentes():
                             except Exception as e:
                                 logging.warning(f"Erro na tradução: {e}")
                                 desc['value_pt'] = desc['value']
-        
+
         total_pages = (total_results + per_page - 1) // per_page if total_results > 0 else 0
-        
+
         return render_template('recentes.html',
                              vulnerabilidades=vulnerabilidades,
                              total_results=total_results,
                              page=page,
                              total_pages=total_pages,
                              per_page=per_page)
-                             
+
     except Exception as e:
         logging.error(f"Erro ao carregar CVEs recentes: {str(e)}")
         flash(f"Erro ao carregar vulnerabilidades recentes: {str(e)}", "error")
@@ -439,19 +548,19 @@ def kev():
         page = int(request.args.get('page', 1))
         per_page = 20
         start_index = (page - 1) * per_page
-        
+
         response = nvd_client.get_kev_cves(
             start_index=start_index,
             results_per_page=per_page
         )
-        
+
         vulnerabilidades = []
         total_results = 0
-        
+
         if response and 'vulnerabilities' in response:
             vulnerabilidades = response['vulnerabilities']
             total_results = response.get('totalResults', 0)
-            
+
             # Traduzir descrições
             for vuln in vulnerabilidades:
                 if 'cve' in vuln and 'descriptions' in vuln['cve']:
@@ -463,16 +572,16 @@ def kev():
                             except Exception as e:
                                 logging.warning(f"Erro na tradução: {e}")
                                 desc['value_pt'] = desc['value']
-        
+
         total_pages = (total_results + per_page - 1) // per_page if total_results > 0 else 0
-        
+
         return render_template('kev.html',
                              vulnerabilidades=vulnerabilidades,
                              total_results=total_results,
                              page=page,
                              total_pages=total_pages,
                              per_page=per_page)
-                             
+
     except Exception as e:
         logging.error(f"Erro ao carregar CVEs KEV: {str(e)}")
         flash(f"Erro ao carregar vulnerabilidades KEV: {str(e)}", "error")
@@ -487,16 +596,16 @@ def api_vulnerabilidades_por_ano(year):
         per_page = min(int(request.args.get('per_page', 20)), 500)  # Máximo 500
         offset = (page - 1) * per_page
         include_pt = request.args.get('include_pt', 'false').lower() == 'true'
-        
+
         # Buscar vulnerabilidades do ano específico
         db = VulnerabilityDatabase(database_url=os.environ.get('DATABASE_URL'))
-        
+
         db._ensure_connection()
-        
+
         try:
             import psycopg2.extras
             cursor = db.connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-            
+
             # Contar total de vulnerabilidades do ano
             cursor.execute("""
                 SELECT COUNT(*) as total
@@ -504,7 +613,7 @@ def api_vulnerabilidades_por_ano(year):
                 WHERE year = %s
             """, (year,))
             total_count = cursor.fetchone()['total']
-            
+
             # Buscar vulnerabilidades paginadas
             cursor.execute("""
                 SELECT cve_id, year, published_date, last_modified, vulnStatus, cvss_metrics
@@ -513,13 +622,13 @@ def api_vulnerabilidades_por_ano(year):
                 ORDER BY published_date DESC
                 LIMIT %s OFFSET %s
             """, (year, per_page, offset))
-            
+
             vulnerabilities = []
             rows = cursor.fetchall()
             for row in rows:
                 # cvss_metrics já é um dict quando vem do banco
                 cvss_metrics = row['cvss_metrics'] if row['cvss_metrics'] else None
-                
+
                 vuln_data = {
                     'cve_id': row['cve_id'],
                     'year': row['year'],
@@ -528,28 +637,28 @@ def api_vulnerabilidades_por_ano(year):
                     'vulnStatus': row['vulnstatus'],
                     'cvss_metrics': cvss_metrics
                 }
-                
+
                 # Adicionar tradução do status se português solicitado
                 if include_pt:
                     vuln_data['vulnStatus_pt'] = filter_translate_status(row['vulnstatus'])
                     if cvss_metrics and 'baseSeverity' in cvss_metrics:
                         vuln_data['cvss_metrics_pt'] = cvss_metrics.copy()
                         vuln_data['cvss_metrics_pt']['baseSeverity_pt'] = filter_translate_severity(cvss_metrics['baseSeverity'])
-                
+
                 vulnerabilities.append(vuln_data)
-            
+
             cursor.close()
-            
+
         except Exception as e:
             logging.error(f"Erro na consulta de vulnerabilidades do ano {year}: {e}")
             vulnerabilities = []
             total_count = 0
         finally:
             db.close()
-        
+
         # Calcular informações de paginação
         total_pages = (total_count + per_page - 1) // per_page if total_count > 0 else 0
-        
+
         return {
             'status': 'success',
             'data': {
@@ -565,7 +674,7 @@ def api_vulnerabilidades_por_ano(year):
                 'year': year
             }
         }
-                             
+
     except Exception as e:
         logging.error(f"Erro ao buscar vulnerabilidades do ano {year}: {e}")
         return {
@@ -583,12 +692,12 @@ def cinco_recentes():
             start_index=0,
             results_per_page=5
         )
-        
+
         vulnerabilidades = []
-        
+
         if response and 'vulnerabilities' in response:
             vulnerabilidades = response['vulnerabilities'][:5]  # Garantir apenas 5
-            
+
             # Traduzir descrições
             for vuln in vulnerabilidades:
                 if 'cve' in vuln and 'descriptions' in vuln['cve']:
@@ -600,9 +709,9 @@ def cinco_recentes():
                             except Exception as e:
                                 logging.warning(f"Erro na tradução: {e}")
                                 desc['value_pt'] = desc['value']
-        
+
         return render_template('5recentes.html', vulnerabilidades=vulnerabilidades)
-                             
+
     except Exception as e:
         logging.error(f"Erro ao carregar 5 CVEs recentes: {str(e)}")
         flash(f"Erro ao carregar 5 vulnerabilidades recentes: {str(e)}", "error")
@@ -663,15 +772,15 @@ def busca_por_ano():
     try:
         # Buscar estatísticas do banco de dados
         db = VulnerabilityDatabase(database_url=os.environ.get('DATABASE_URL'))
-        
+
         # Buscar vulnerabilidades por ano usando raw SQL
         db._ensure_connection()
-        
+
         try:
             # Contar vulnerabilidades por ano
             import psycopg2.extras
             cursor = db.connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-            
+
             cursor.execute("""
                 SELECT year, COUNT(*) as count 
                 FROM vulnerabilities 
@@ -685,22 +794,22 @@ def busca_por_ano():
                     'year': row['year'],
                     'count': row['count']
                 })
-            
+
             # Estatísticas gerais
             cursor.execute("SELECT COUNT(*) as total FROM vulnerabilities")
             result = cursor.fetchone()
             total_vulnerabilities = result['total'] if result else 0
-            
+
             cursor.execute("SELECT COUNT(DISTINCT year) as total FROM vulnerabilities")
             result = cursor.fetchone()
             total_years = result['total'] if result else 0
-            
+
             cursor.execute("SELECT COUNT(*) as total FROM translations")
             result = cursor.fetchone()
             total_translations = result['total'] if result else 0
-            
+
             cursor.close()
-            
+
         except Exception as e:
             logging.error(f"Erro na consulta SQL: {e}")
             years_data = []
@@ -709,13 +818,13 @@ def busca_por_ano():
             total_translations = 0
         finally:
             db.close()
-        
+
         return render_template('busca-por-ano.html',
                              years_data=years_data,
                              total_vulnerabilities=total_vulnerabilities,
                              total_years=total_years,
                              total_translations=total_translations)
-                             
+
     except Exception as e:
         logging.error(f"Erro ao buscar dados por ano: {e}")
         flash('Erro ao carregar dados por ano', 'error')
@@ -728,16 +837,16 @@ def vulnerabilidades_por_ano(year):
         page = int(request.args.get('page', 1))
         per_page = 20  # Reduzir para paginação adequada
         offset = (page - 1) * per_page
-        
+
         # Buscar vulnerabilidades do ano específico
         db = VulnerabilityDatabase(database_url=os.environ.get('DATABASE_URL'))
-        
+
         db._ensure_connection()
-        
+
         try:
             import psycopg2.extras
             cursor = db.connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-            
+
             # Contar total de vulnerabilidades do ano
             cursor.execute("""
                 SELECT COUNT(*) as total
@@ -745,7 +854,7 @@ def vulnerabilidades_por_ano(year):
                 WHERE year = %s
             """, (year,))
             total_count = cursor.fetchone()['total']
-            
+
             # Buscar vulnerabilidades paginadas
             cursor.execute("""
                 SELECT cve_id, year, published_date, last_modified, vulnStatus, cvss_metrics
@@ -754,13 +863,13 @@ def vulnerabilidades_por_ano(year):
                 ORDER BY published_date DESC
                 LIMIT %s OFFSET %s
             """, (year, per_page, offset))
-            
+
             vulnerabilities = []
             rows = cursor.fetchall()
             for row in rows:
                 # cvss_metrics já é um dict quando vem do banco
                 cvss_metrics = row['cvss_metrics'] if row['cvss_metrics'] else None
-                
+
                 vulnerabilities.append({
                     'cve_id': row['cve_id'],
                     'year': row['year'],
@@ -769,19 +878,19 @@ def vulnerabilidades_por_ano(year):
                     'vulnStatus': row['vulnstatus'],
                     'cvss_metrics': cvss_metrics
                 })
-            
+
             cursor.close()
-            
+
         except Exception as e:
             logging.error(f"Erro na consulta de vulnerabilidades do ano {year}: {e}")
             vulnerabilities = []
             total_count = 0
         finally:
             db.close()
-        
+
         # Calcular informações de paginação
         total_pages = (total_count + per_page - 1) // per_page if total_count > 0 else 0
-        
+
         return render_template('vulnerabilidades-por-ano.html',
                              year=year,
                              vulnerabilities=vulnerabilities,
@@ -789,7 +898,7 @@ def vulnerabilidades_por_ano(year):
                              total_pages=total_pages,
                              per_page=per_page,
                              total_count=total_count)
-                             
+
     except Exception as e:
         logging.error(f"Erro ao buscar vulnerabilidades do ano {year}: {e}")
         flash(f'Erro ao carregar vulnerabilidades do ano {year}', 'error')
@@ -812,17 +921,17 @@ def ver_todas_noticias():
     try:
         page = int(request.args.get('page', 1))
         per_page = 5
-        
+
         all_news = get_month_news()
         total_news = len(all_news)
-        
+
         # Calcular paginação
         start_idx = (page - 1) * per_page
         end_idx = start_idx + per_page
         news = all_news[start_idx:end_idx]
-        
+
         total_pages = (total_news + per_page - 1) // per_page if total_news > 0 else 0
-        
+
         return render_template('ver-todas-noticias.html', 
                              noticias=news,
                              page=page,
@@ -840,7 +949,7 @@ def noticias_conteudo():
         link = request.args.get('link', '')
         if not link:
             return jsonify({'error': 'Link não fornecido'}), 400
-        
+
         content = get_news_content(link)
         return jsonify({'content': content})
     except Exception as e:
@@ -854,20 +963,20 @@ def noticia_detalhes(slug):
         # Buscar notícia pelo slug
         from advisor import advisor_monitor
         news_list = advisor_monitor.load_news()
-        
+
         noticia = None
         for news in news_list:
             if news.get('slug') == slug:
                 noticia = news
                 break
-        
+
         if not noticia:
             flash('Notícia não encontrada', 'error')
             return redirect(url_for('noticias'))
-        
+
         # Renderizar template individual da notícia
         template_path = f'noticias/{slug}.html'
-        
+
         # Verificar se o template existe
         import os
         full_template_path = os.path.join('templates', 'noticias', f'{slug}.html')
@@ -875,7 +984,7 @@ def noticia_detalhes(slug):
             # Se o HTML não existe, gerar agora
             logging.info(f"Gerando HTML para notícia: {slug}")
             advisor_monitor.generate_news_html(noticia)
-        
+
         # Renderizar template (HTML já está renderizado com os dados)
         return render_template(template_path)
     except Exception as e:
@@ -883,5 +992,78 @@ def noticia_detalhes(slug):
         flash('Erro ao carregar notícia', 'error')
         return redirect(url_for('noticias'))
 
+# ==================== ROTAS DE EXPORTAÇÃO ====================
+
+from export import export_manager
+
+@app.route('/export/vulnerability/<cve_id>/<format>')
+def export_vulnerability(cve_id, format):
+    """Exporta uma vulnerabilidade em diversos formatos"""
+    try:
+        # Validar formato
+        if format not in export_manager.supported_formats:
+            flash(f'Formato não suportado: {format}', 'error')
+            return redirect(url_for('detalhes', cve_id=cve_id))
+
+        # Buscar dados da vulnerabilidade
+        response = nvd_client.get_cve(cve_id)
+
+        if response and 'vulnerabilities' in response and len(response['vulnerabilities']) > 0:
+            vulnerabilidade = response['vulnerabilities'][0]
+
+            # Traduzir descrições para português (se disponível)
+            if 'cve' in vulnerabilidade and 'descriptions' in vulnerabilidade['cve']:
+                for desc in vulnerabilidade['cve']['descriptions']:
+                    if desc.get('lang') == 'en' and desc.get('value'):
+                        try:
+                            original_text = desc['value']
+                            translated = translator.translate_text(original_text)
+                            desc['value_pt'] = translated
+                        except Exception as e:
+                            logging.error(f"Erro na tradução para exportação: {e}")
+                            desc['value_pt'] = desc['value']
+
+            # Exportar no formato especificado
+            return export_manager.export_vulnerability(vulnerabilidade, format)
+        else:
+            flash(f'Vulnerabilidade {cve_id} não encontrada.', 'error')
+            return redirect(url_for('busca'))
+
+    except Exception as e:
+        logging.error(f"Erro ao exportar CVE {cve_id} em formato {format}: {str(e)}")
+        flash(f'Erro ao exportar vulnerabilidade: {str(e)}', 'error')
+        return redirect(url_for('detalhes', cve_id=cve_id))
+
+@app.route('/export/news/<slug>/<format>')
+def export_news(slug, format):
+    """Exporta uma notícia em diversos formatos"""
+    try:
+        # Validar formato
+        if format not in export_manager.supported_formats:
+            flash(f'Formato não suportado: {format}', 'error')
+            return redirect(url_for('noticia_detalhes', slug=slug))
+
+        # Buscar notícia pelo slug
+        from advisor import advisor_monitor
+        news_list = advisor_monitor.load_news()
+
+        noticia = None
+        for news in news_list:
+            if news.get('slug') == slug:
+                noticia = news
+                break
+
+        if not noticia:
+            flash('Notícia não encontrada', 'error')
+            return redirect(url_for('noticias'))
+
+        # Exportar no formato especificado
+        return export_manager.export_news(noticia, format)
+
+    except Exception as e:
+        logging.error(f"Erro ao exportar notícia {slug} em formato {format}: {str(e)}")
+        flash(f'Erro ao exportar notícia: {str(e)}', 'error')
+        return redirect(url_for('noticia_detalhes', slug=slug))
+
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)

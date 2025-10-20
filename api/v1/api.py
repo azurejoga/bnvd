@@ -57,10 +57,11 @@ def get_portuguese_description(cve_id: str, original_description: str) -> Option
         return None
 
 def get_database_connection():
-    """Retorna conexão com banco de dados"""
+    """Retorna conexão com banco de dados ou None se não disponível"""
     database_url = os.environ.get('DATABASE_URL')
     if not database_url:
-        raise Exception("DATABASE_URL não configurado")
+        logging.warning("DATABASE_URL não configurado - endpoints de banco de dados não disponíveis")
+        return None
     
     try:
         db = VulnerabilityDatabase(database_url)
@@ -68,7 +69,7 @@ def get_database_connection():
         return db
     except Exception as e:
         logging.error(f"Erro ao conectar com banco: {e}")
-        raise
+        return None
 
 def format_vulnerability_response(vuln_data: Dict, include_pt: bool = True) -> Dict:
     """Formata dados de vulnerabilidade para resposta da API"""
@@ -125,30 +126,56 @@ def api_root():
         'name': 'BNVD API v1',
         'description': 'Banco Nacional de Vulnerabilidades Cibernéticas - API REST',
         'version': '1.0.0',
-        'base_url': 'https://3bb1226b-7326-450c-9718-7460474e3bb4-00-hlsekyfc3ju1.kirk.replit.dev/api/v1',
+        'base_url': 'https://bnvd.org/api/v1',
+        'github': 'https://github.com/azurejoga/bnvd',
+        'api_clients': 'https://github.com/azurejoga/bnvd/tree/main/api_clients',
         'endpoints': {
             'vulnerabilities': {
                 'GET /vulnerabilities': 'Lista todas as vulnerabilidades (paginado)',
                 'GET /vulnerabilities/<cve_id>': 'Busca vulnerabilidade específica por CVE ID',
-                'parameters': ['page', 'per_page', 'year', 'severity', 'vendor']
+                'parameters': ['page', 'per_page', 'year', 'severity', 'vendor', 'include_pt']
             },
             'search': {
-                'GET /search/recent': 'Vulnerabilidades recentes (últimos 7 dias)',
+                'GET /search/recent': 'Vulnerabilidades recentes (últimos N dias)',
                 'GET /search/recent/5': 'As 5 vulnerabilidades mais recentes',
                 'GET /search/year/<year>': 'Vulnerabilidades por ano',
-                'GET /search/severity/<severity>': 'Vulnerabilidades por severidade',
+                'GET /search/severity/<severity>': 'Vulnerabilidades por severidade (LOW, MEDIUM, HIGH, CRITICAL)',
                 'GET /search/vendor/<vendor>': 'Vulnerabilidades por vendor/fabricante'
             },
             'statistics': {
                 'GET /stats': 'Estatísticas gerais do banco de dados',
-                'GET /stats/years': 'Estatísticas por ano'
+                'GET /stats/years': 'Estatísticas detalhadas por ano'
+            },
+            'noticias': {
+                'GET /noticias': 'Lista todas as notícias de segurança cibernética (paginado)',
+                'GET /noticias/recentes': 'Retorna as notícias mais recentes (padrão: 5)',
+                'GET /noticias/<slug>': 'Retorna uma notícia específica pelo slug',
+                'parameters': ['page', 'per_page', 'limit']
+            },
+            'mitre': {
+                'GET /mitre': 'Informações sobre os endpoints MITRE ATT&CK',
+                'GET /mitre/matrices': 'Lista todas as matrizes disponíveis (enterprise, mobile, ics, pre-attack)',
+                'GET /mitre/matrix/<type>': 'Dados completos de uma matriz específica',
+                'GET /mitre/techniques': 'Lista todas as técnicas',
+                'GET /mitre/technique/<id>': 'Detalhes de uma técnica específica',
+                'GET /mitre/subtechniques': 'Lista todas as subtécnicas',
+                'GET /mitre/groups': 'Lista todos os grupos de ameaças',
+                'GET /mitre/group/<id>': 'Detalhes de um grupo específico',
+                'GET /mitre/mitigations': 'Lista todas as mitigações',
+                'GET /mitre/mitigation/<id>': 'Detalhes de uma mitigação específica',
+                'parameters': ['matrix', 'tactic', 'platform', 'translate']
             }
         },
         'parameters': {
             'page': 'Número da página (padrão: 1)',
             'per_page': 'Resultados por página (padrão: 20, máximo: 100)',
+            'limit': 'Número de resultados (usado em endpoints específicos)',
             'format': 'Formato de resposta (json)',
-            'include_pt': 'Incluir traduções em português (true/false)'
+            'include_pt': 'Incluir traduções em português (true/false)',
+            'translate': 'Traduzir conteúdo MITRE para português (true/false)',
+            'matrix': 'Tipo de matriz MITRE (enterprise, mobile, ics, pre-attack)',
+            'tactic': 'Filtrar técnicas por tática',
+            'platform': 'Filtrar por plataforma'
         },
         'response_format': {
             'success': {
@@ -165,6 +192,28 @@ def api_root():
                 'status': 'error',
                 'message': 'Descrição do erro',
                 'code': 400
+            }
+        },
+        'examples': {
+            'vulnerabilities': {
+                'list': '/api/v1/vulnerabilities?page=1&per_page=20&include_pt=true',
+                'specific': '/api/v1/vulnerabilities/CVE-2024-12345',
+                'by_year': '/api/v1/search/year/2024',
+                'by_severity': '/api/v1/search/severity/CRITICAL',
+                'recent': '/api/v1/search/recent?days=7'
+            },
+            'noticias': {
+                'list': '/api/v1/noticias?page=1&per_page=20',
+                'recent': '/api/v1/noticias/recentes?limit=5',
+                'specific': '/api/v1/noticias/slug-da-noticia'
+            },
+            'mitre': {
+                'matrices': '/api/v1/mitre/matrices',
+                'enterprise': '/api/v1/mitre/matrix/enterprise?translate=true',
+                'techniques': '/api/v1/mitre/techniques?matrix=enterprise&tactic=initial-access',
+                'specific_technique': '/api/v1/mitre/technique/T1566',
+                'groups': '/api/v1/mitre/groups?matrix=enterprise',
+                'mitigations': '/api/v1/mitre/mitigations?matrix=enterprise'
             }
         }
     })
@@ -185,6 +234,13 @@ def list_vulnerabilities():
         
         # Conectar ao banco
         db = get_database_connection()
+        if not db:
+            return jsonify({
+                'status': 'error',
+                'message': 'Banco de dados não disponível. Este endpoint requer configuração de DATABASE_URL.',
+                'code': 503
+            }), 503
+            
         cursor = db.connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         # Construir query base
@@ -288,6 +344,13 @@ def get_vulnerability(cve_id):
         
         # Conectar ao banco
         db = get_database_connection()
+        if not db:
+            return jsonify({
+                'status': 'error',
+                'message': 'Banco de dados não disponível. Este endpoint requer configuração de DATABASE_URL.',
+                'code': 503
+            }), 503
+            
         cursor = db.connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         cursor.execute("SELECT * FROM vulnerabilities WHERE cve_id = %s", (cve_id,))
@@ -329,6 +392,13 @@ def search_recent():
         
         # Conectar ao banco
         db = get_database_connection()
+        if not db:
+            return jsonify({
+                'status': 'error',
+                'message': 'Banco de dados não disponível. Este endpoint requer configuração de DATABASE_URL.',
+                'code': 503
+            }), 503
+            
         cursor = db.connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         # Data limite
@@ -393,6 +463,13 @@ def search_recent_5():
         
         # Conectar ao banco
         db = get_database_connection()
+        if not db:
+            return jsonify({
+                'status': 'error',
+                'message': 'Banco de dados não disponível. Este endpoint requer configuração de DATABASE_URL.',
+                'code': 503
+            }), 503
+            
         cursor = db.connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         cursor.execute("""
@@ -435,6 +512,13 @@ def search_by_year(year):
         
         # Conectar ao banco
         db = get_database_connection()
+        if not db:
+            return jsonify({
+                'status': 'error',
+                'message': 'Banco de dados não disponível. Este endpoint requer configuração de DATABASE_URL.',
+                'code': 503
+            }), 503
+            
         cursor = db.connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         # Contar total
@@ -511,6 +595,13 @@ def search_by_severity(severity):
         
         # Conectar ao banco
         db = get_database_connection()
+        if not db:
+            return jsonify({
+                'status': 'error',
+                'message': 'Banco de dados não disponível. Este endpoint requer configuração de DATABASE_URL.',
+                'code': 503
+            }), 503
+            
         cursor = db.connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         # Contar total
@@ -590,6 +681,13 @@ def search_by_vendor(vendor):
         
         # Conectar ao banco
         db = get_database_connection()
+        if not db:
+            return jsonify({
+                'status': 'error',
+                'message': 'Banco de dados não disponível. Este endpoint requer configuração de DATABASE_URL.',
+                'code': 503
+            }), 503
+            
         cursor = db.connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         # Contar total
@@ -646,6 +744,13 @@ def get_statistics():
     try:
         # Conectar ao banco
         db = get_database_connection()
+        if not db:
+            return jsonify({
+                'status': 'error',
+                'message': 'Banco de dados não disponível. Este endpoint requer configuração de DATABASE_URL.',
+                'code': 503
+            }), 503
+            
         cursor = db.connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         # Estatísticas gerais
@@ -704,6 +809,13 @@ def get_years_statistics():
     try:
         # Conectar ao banco
         db = get_database_connection()
+        if not db:
+            return jsonify({
+                'status': 'error',
+                'message': 'Banco de dados não disponível. Este endpoint requer configuração de DATABASE_URL.',
+                'code': 503
+            }), 503
+            
         cursor = db.connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         cursor.execute("""
@@ -740,6 +852,472 @@ def get_years_statistics():
         
     except Exception as e:
         logging.error(f"Erro ao obter estatísticas por ano: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'code': 500
+        }), 500
+
+# ==================== ENDPOINTS DE NOTÍCIAS ====================
+
+@api_v1.route('/noticias')
+def list_noticias():
+    """Lista todas as notícias"""
+    try:
+        from advisor import get_all_news
+        
+        page = int(request.args.get('page', 1))
+        per_page = min(int(request.args.get('per_page', 20)), 100)
+        
+        all_news = get_all_news()
+        
+        if not all_news:
+            return jsonify({
+                'status': 'success',
+                'data': [],
+                'total': 0,
+                'message': 'Nenhuma notícia disponível'
+            })
+        
+        # Paginação
+        total = len(all_news)
+        start = (page - 1) * per_page
+        end = start + per_page
+        paginated_news = all_news[start:end]
+        
+        total_pages = (total + per_page - 1) // per_page
+        
+        return jsonify({
+            'status': 'success',
+            'data': paginated_news,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': total,
+                'pages': total_pages,
+                'has_next': page < total_pages,
+                'has_prev': page > 1
+            }
+        })
+        
+    except Exception as e:
+        logging.error(f"Erro ao listar notícias: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'code': 500
+        }), 500
+
+@api_v1.route('/noticias/recentes')
+def noticias_recentes():
+    """Retorna as 5 notícias mais recentes"""
+    try:
+        from advisor import get_recent_news
+        
+        limit = min(int(request.args.get('limit', 5)), 20)
+        recent_news = get_recent_news(limit)
+        
+        return jsonify({
+            'status': 'success',
+            'data': recent_news,
+            'count': len(recent_news)
+        })
+        
+    except Exception as e:
+        logging.error(f"Erro ao buscar notícias recentes: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'code': 500
+        }), 500
+
+@api_v1.route('/noticias/<slug>')
+def get_noticia(slug):
+    """Retorna uma notícia específica pelo slug"""
+    try:
+        from advisor import get_news_by_slug
+        
+        news = get_news_by_slug(slug)
+        
+        if not news:
+            return jsonify({
+                'status': 'error',
+                'message': f'Notícia não encontrada: {slug}',
+                'code': 404
+            }), 404
+        
+        return jsonify({
+            'status': 'success',
+            'data': news
+        })
+        
+    except Exception as e:
+        logging.error(f"Erro ao buscar notícia {slug}: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'code': 500
+        }), 500
+
+# ==================== ENDPOINTS DE MITRE ATT&CK ====================
+
+@api_v1.route('/mitre')
+def mitre_info():
+    """Informações sobre os endpoints MITRE ATT&CK"""
+    return jsonify({
+        'status': 'success',
+        'name': 'MITRE ATT&CK API',
+        'description': 'API para acesso aos dados do MITRE ATT&CK',
+        'endpoints': {
+            'GET /mitre/matrices': 'Lista todas as matrizes disponíveis',
+            'GET /mitre/matrix/<type>': 'Dados completos de uma matriz (enterprise, mobile, ics, pre-attack)',
+            'GET /mitre/techniques': 'Lista todas as técnicas',
+            'GET /mitre/technique/<id>': 'Detalhes de uma técnica específica',
+            'GET /mitre/subtechniques': 'Lista todas as subtécnicas',
+            'GET /mitre/groups': 'Lista todos os grupos de ameaças',
+            'GET /mitre/group/<id>': 'Detalhes de um grupo específico',
+            'GET /mitre/mitigations': 'Lista todas as mitigações',
+            'GET /mitre/mitigation/<id>': 'Detalhes de uma mitigação específica'
+        },
+        'filters': {
+            'matrix': 'Filtrar por matriz (enterprise, mobile, ics, pre-attack)',
+            'tactic': 'Filtrar técnicas por tática',
+            'platform': 'Filtrar por plataforma'
+        }
+    })
+
+@api_v1.route('/mitre/matrices')
+def list_mitre_matrices():
+    """Lista todas as matrizes MITRE ATT&CK"""
+    try:
+        from mitre import mitre_processor
+        
+        if not mitre_processor:
+            return jsonify({
+                'status': 'error',
+                'message': 'Sistema MITRE ATT&CK não disponível',
+                'code': 503
+            }), 503
+        
+        summary = mitre_processor.get_all_matrices_summary(translate=False)
+        
+        return jsonify({
+            'status': 'success',
+            'data': summary
+        })
+        
+    except Exception as e:
+        logging.error(f"Erro ao listar matrizes MITRE: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'code': 500
+        }), 500
+
+@api_v1.route('/mitre/matrix/<matrix_type>')
+def get_mitre_matrix(matrix_type):
+    """Retorna dados completos de uma matriz MITRE ATT&CK"""
+    try:
+        from mitre import mitre_processor
+        
+        if not mitre_processor:
+            return jsonify({
+                'status': 'error',
+                'message': 'Sistema MITRE ATT&CK não disponível',
+                'code': 503
+            }), 503
+        
+        valid_matrices = ['enterprise', 'mobile', 'ics', 'pre-attack']
+        if matrix_type not in valid_matrices:
+            return jsonify({
+                'status': 'error',
+                'message': f'Matriz inválida. Opções: {", ".join(valid_matrices)}',
+                'code': 400
+            }), 400
+        
+        translate = request.args.get('translate', 'false').lower() == 'true'
+        matrix_data = mitre_processor.get_matrix_data(matrix_type, translate=translate)
+        
+        return jsonify({
+            'status': 'success',
+            'data': matrix_data
+        })
+        
+    except Exception as e:
+        logging.error(f"Erro ao buscar matriz {matrix_type}: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'code': 500
+        }), 500
+
+@api_v1.route('/mitre/techniques')
+def list_mitre_techniques():
+    """Lista todas as técnicas MITRE ATT&CK"""
+    try:
+        from mitre import mitre_processor
+        
+        if not mitre_processor:
+            return jsonify({
+                'status': 'error',
+                'message': 'Sistema MITRE ATT&CK não disponível',
+                'code': 503
+            }), 503
+        
+        matrix_type = request.args.get('matrix', 'enterprise')
+        tactic = request.args.get('tactic')
+        platform = request.args.get('platform')
+        translate = request.args.get('translate', 'false').lower() == 'true'
+        
+        matrix_data = mitre_processor.get_matrix_data(matrix_type, translate=translate)
+        techniques = matrix_data.get('techniques', [])
+        
+        # Filtrar por tática se especificada
+        if tactic:
+            techniques = [t for t in techniques if tactic in t.get('tactics', [])]
+        
+        # Filtrar por plataforma se especificada
+        if platform:
+            techniques = [t for t in techniques if platform.lower() in [p.lower() for p in t.get('platforms', [])]]
+        
+        return jsonify({
+            'status': 'success',
+            'data': techniques,
+            'count': len(techniques),
+            'filters': {
+                'matrix': matrix_type,
+                'tactic': tactic,
+                'platform': platform
+            }
+        })
+        
+    except Exception as e:
+        logging.error(f"Erro ao listar técnicas MITRE: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'code': 500
+        }), 500
+
+@api_v1.route('/mitre/technique/<technique_id>')
+def get_mitre_technique(technique_id):
+    """Retorna detalhes de uma técnica específica"""
+    try:
+        from mitre import mitre_processor
+        
+        if not mitre_processor:
+            return jsonify({
+                'status': 'error',
+                'message': 'Sistema MITRE ATT&CK não disponível',
+                'code': 503
+            }), 503
+        
+        matrix_type = request.args.get('matrix', 'enterprise')
+        translate = request.args.get('translate', 'false').lower() == 'true'
+        
+        matrix_data = mitre_processor.get_matrix_data(matrix_type, translate=translate)
+        techniques = matrix_data.get('techniques', []) + matrix_data.get('subtechniques', [])
+        
+        # Buscar técnica pelo ID
+        technique = next((t for t in techniques if t.get('id') == technique_id.upper()), None)
+        
+        if not technique:
+            return jsonify({
+                'status': 'error',
+                'message': f'Técnica {technique_id} não encontrada',
+                'code': 404
+            }), 404
+        
+        return jsonify({
+            'status': 'success',
+            'data': technique
+        })
+        
+    except Exception as e:
+        logging.error(f"Erro ao buscar técnica {technique_id}: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'code': 500
+        }), 500
+
+@api_v1.route('/mitre/subtechniques')
+def list_mitre_subtechniques():
+    """Lista todas as subtécnicas MITRE ATT&CK"""
+    try:
+        from mitre import mitre_processor
+        
+        if not mitre_processor:
+            return jsonify({
+                'status': 'error',
+                'message': 'Sistema MITRE ATT&CK não disponível',
+                'code': 503
+            }), 503
+        
+        matrix_type = request.args.get('matrix', 'enterprise')
+        translate = request.args.get('translate', 'false').lower() == 'true'
+        
+        matrix_data = mitre_processor.get_matrix_data(matrix_type, translate=translate)
+        subtechniques = matrix_data.get('subtechniques', [])
+        
+        return jsonify({
+            'status': 'success',
+            'data': subtechniques,
+            'count': len(subtechniques)
+        })
+        
+    except Exception as e:
+        logging.error(f"Erro ao listar subtécnicas MITRE: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'code': 500
+        }), 500
+
+@api_v1.route('/mitre/groups')
+def list_mitre_groups():
+    """Lista todos os grupos de ameaças MITRE ATT&CK"""
+    try:
+        from mitre import mitre_processor
+        
+        if not mitre_processor:
+            return jsonify({
+                'status': 'error',
+                'message': 'Sistema MITRE ATT&CK não disponível',
+                'code': 503
+            }), 503
+        
+        matrix_type = request.args.get('matrix', 'enterprise')
+        translate = request.args.get('translate', 'false').lower() == 'true'
+        
+        matrix_data = mitre_processor.get_matrix_data(matrix_type, translate=translate)
+        groups = matrix_data.get('groups', [])
+        
+        return jsonify({
+            'status': 'success',
+            'data': groups,
+            'count': len(groups)
+        })
+        
+    except Exception as e:
+        logging.error(f"Erro ao listar grupos MITRE: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'code': 500
+        }), 500
+
+@api_v1.route('/mitre/group/<group_id>')
+def get_mitre_group(group_id):
+    """Retorna detalhes de um grupo específico"""
+    try:
+        from mitre import mitre_processor
+        
+        if not mitre_processor:
+            return jsonify({
+                'status': 'error',
+                'message': 'Sistema MITRE ATT&CK não disponível',
+                'code': 503
+            }), 503
+        
+        matrix_type = request.args.get('matrix', 'enterprise')
+        translate = request.args.get('translate', 'false').lower() == 'true'
+        
+        matrix_data = mitre_processor.get_matrix_data(matrix_type, translate=translate)
+        groups = matrix_data.get('groups', [])
+        
+        # Buscar grupo pelo ID
+        group = next((g for g in groups if g.get('id') == group_id.upper()), None)
+        
+        if not group:
+            return jsonify({
+                'status': 'error',
+                'message': f'Grupo {group_id} não encontrado',
+                'code': 404
+            }), 404
+        
+        return jsonify({
+            'status': 'success',
+            'data': group
+        })
+        
+    except Exception as e:
+        logging.error(f"Erro ao buscar grupo {group_id}: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'code': 500
+        }), 500
+
+@api_v1.route('/mitre/mitigations')
+def list_mitre_mitigations():
+    """Lista todas as mitigações MITRE ATT&CK"""
+    try:
+        from mitre import mitre_processor
+        
+        if not mitre_processor:
+            return jsonify({
+                'status': 'error',
+                'message': 'Sistema MITRE ATT&CK não disponível',
+                'code': 503
+            }), 503
+        
+        matrix_type = request.args.get('matrix', 'enterprise')
+        translate = request.args.get('translate', 'false').lower() == 'true'
+        
+        matrix_data = mitre_processor.get_matrix_data(matrix_type, translate=translate)
+        mitigations = matrix_data.get('mitigations', [])
+        
+        return jsonify({
+            'status': 'success',
+            'data': mitigations,
+            'count': len(mitigations)
+        })
+        
+    except Exception as e:
+        logging.error(f"Erro ao listar mitigações MITRE: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'code': 500
+        }), 500
+
+@api_v1.route('/mitre/mitigation/<mitigation_id>')
+def get_mitre_mitigation(mitigation_id):
+    """Retorna detalhes de uma mitigação específica"""
+    try:
+        from mitre import mitre_processor
+        
+        if not mitre_processor:
+            return jsonify({
+                'status': 'error',
+                'message': 'Sistema MITRE ATT&CK não disponível',
+                'code': 503
+            }), 503
+        
+        matrix_type = request.args.get('matrix', 'enterprise')
+        translate = request.args.get('translate', 'false').lower() == 'true'
+        
+        matrix_data = mitre_processor.get_matrix_data(matrix_type, translate=translate)
+        mitigations = matrix_data.get('mitigations', [])
+        
+        # Buscar mitigação pelo ID
+        mitigation = next((m for m in mitigations if m.get('id') == mitigation_id.upper()), None)
+        
+        if not mitigation:
+            return jsonify({
+                'status': 'error',
+                'message': f'Mitigação {mitigation_id} não encontrada',
+                'code': 404
+            }), 404
+        
+        return jsonify({
+            'status': 'success',
+            'data': mitigation
+        })
+        
+    except Exception as e:
+        logging.error(f"Erro ao buscar mitigação {mitigation_id}: {e}")
         return jsonify({
             'status': 'error',
             'message': str(e),
