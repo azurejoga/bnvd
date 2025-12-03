@@ -2,6 +2,18 @@ name: Análise de Segurança com BNVD
 
 on:
   workflow_dispatch: # Permite execução manual
+    inputs:
+      severity_filter:
+        description: 'Filtra alertas por severidade (LOW, MEDIUM, HIGH, CRITICAL, ALL).'
+        required: true
+        default: 'ALL'
+        type: choice
+        options:
+          - LOW
+          - MEDIUM
+          - HIGH
+          - CRITICAL
+          - ALL
   schedule:
     - cron: '0 8 * * 1' # Executa toda segunda-feira às 8h
 
@@ -26,8 +38,8 @@ jobs:
         with:
           # O GITHUB_TOKEN é passado automaticamente e tem as permissões definidas no topo do workflow
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          # Filtra para mostrar apenas vulnerabilidades de severidade ALTA ou CRÍTICA
-          severity_filter: 'HIGH'
+          # Para execuções manuais, usa o input. Para agendadas, usa 'HIGH' como padrão.
+          severity_filter: ${{ github.event.inputs.severity_filter || 'ALL' }}
 
       - name: Fazer Upload do Relatório como Artefato
         # O 'if: always()' garante que o relatório seja salvo mesmo que a Action falhe
@@ -35,7 +47,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: relatorio-de-seguranca-bnvd
-          path: bnvd-security-report.md # O nome do arquivo é definido como output da Action
+          # O path deve ser relativo ao GITHUB_WORKSPACE, onde o script salva o relatório
+          path: bnvd-security-report.md
           retention-days: 7
 
       - name: Adicionar Resumo do Job ao Sumário do Workflow
@@ -43,10 +56,13 @@ jobs:
         run: |
           echo "## Resumo da Análise de Segurança BNVD" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **CVEs Totais Encontrados:** ${{ steps.bnvd-enricher.outputs.total_cves_found }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **CVEs Enriquecidos (Filtro: ${{ github.event.inputs.severity_filter || 'HIGH' }}):** ${{ steps.bnvd-enricher.outputs.enriched_cves }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **CVEs Totais Encontrados:** ${{ steps.bnvd-enricher.outputs.total_cves_found || 0 }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **CVEs Enriquecidos (Filtro: `${{ github.event.inputs.severity_filter || 'HIGH' }}`):** ${{ steps.bnvd-enricher.outputs.enriched_cves || 0 }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Conteúdo do Relatório:" >> $GITHUB_STEP_SUMMARY
           # Adiciona o conteúdo do relatório ao sumário para fácil visualização
-          cat bnvd-security-report.md >> $GITHUB_STEP_SUMMARY || echo "_Nenhum relatório foi gerado._" >> $GITHUB_STEP_SUMMARY
-
+          if [ -f bnvd-security-report.md ]; then
+            cat bnvd-security-report.md >> $GITHUB_STEP_SUMMARY
+          else
+            echo "_Nenhum relatório foi gerado._" >> $GITHUB_STEP_SUMMARY
+          fi
