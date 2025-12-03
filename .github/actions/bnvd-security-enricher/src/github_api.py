@@ -65,6 +65,12 @@ class GitHubAPIClient:
         return all_results
 
     def get_dependabot_alerts(self, owner: str, repo: str, state: str = "open") -> List[Dict]:
+        """
+        Busca alertas do Dependabot via API do GitHub.
+        
+        Endpoint: GET /repos/{owner}/{repo}/dependabot/alerts
+        Requer permissão: security_events:read
+        """
         endpoint = f"/repos/{owner}/{repo}/dependabot/alerts"
         params = {"state": state}
 
@@ -73,86 +79,116 @@ class GitHubAPIClient:
             logger.info(f"Parâmetros: state={state}")
             
             alerts = self._paginate(endpoint, params)
-            logger.info(f"Encontrados {len(alerts)} alertas Dependabot")
+            logger.info(f"Encontrados {len(alerts)} alertas Dependabot no estado '{state}'")
             
             # Log detalhado dos primeiros alertas para debug
             if len(alerts) > 0:
-                logger.info(f"Primeiro alerta (preview): {alerts[0].get('number', 'N/A')} - {alerts[0].get('security_advisory', {}).get('ghsa_id', 'N/A')}")
-            
-            # Tentar também buscar alertas fechados para verificar se existem vulnerabilidades
-            if len(alerts) == 0:
-                logger.warning("Nenhum alerta Dependabot ABERTO encontrado. Tentando buscar todos os estados...")
-                try:
-                    all_alerts = self._paginate(endpoint, {"state": "dismissed"})
-                    logger.info(f"Encontrados {len(all_alerts)} alertas DISMISSED")
-                    all_alerts_closed = self._paginate(endpoint, {"state": "fixed"})
-                    logger.info(f"Encontrados {len(all_alerts_closed)} alertas FIXED")
-                except Exception as ex:
-                    logger.debug(f"Erro ao buscar outros estados: {ex}")
+                first = alerts[0]
+                logger.info(f"Primeiro alerta: #{first.get('number', 'N/A')} - {first.get('security_advisory', {}).get('ghsa_id', 'N/A')}")
+                logger.debug(f"CVE: {first.get('security_advisory', {}).get('cve_id', 'N/A')}")
+            else:
+                logger.warning("⚠️  Nenhum alerta Dependabot encontrado no estado 'open'")
+                logger.info("Verificando outros estados para diagnóstico...")
                 
-                logger.warning("Nenhum alerta Dependabot ABERTO encontrado. Verifique se:")
-                logger.warning("  1. Dependabot está habilitado no repositório")
-                logger.warning("  2. O token tem permissão 'security_events'")
-                logger.warning("  3. Existem alertas abertos no repositório")
-                logger.warning("  4. As dependências têm vulnerabilidades conhecidas")
+                # Buscar todos os estados para diagnóstico
+                all_states = []
+                for check_state in ["dismissed", "fixed", "auto_dismissed"]:
+                    try:
+                        state_alerts = self._paginate(endpoint, {"state": check_state})
+                        if state_alerts:
+                            all_states.append((check_state, len(state_alerts)))
+                            logger.info(f"  - {len(state_alerts)} alertas no estado '{check_state}'")
+                    except Exception:
+                        pass
+                
+                if not all_states:
+                    logger.warning("Nenhum alerta Dependabot encontrado em qualquer estado.")
+                    logger.warning("Possíveis causas:")
+                    logger.warning("  1. Dependabot não está habilitado no repositório")
+                    logger.warning("  2. O token não tem permissão 'security_events:read'")
+                    logger.warning("  3. O repositório não possui dependências com vulnerabilidades")
+                    logger.warning("  4. O repositório não possui arquivos de manifesto (package.json, requirements.txt, etc.)")
 
             return alerts
+            
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 403:
-                logger.error("Sem permissão para acessar alertas Dependabot.")
-                logger.error("Verifique se o token tem scope 'security_events'")
+                logger.error("❌ Sem permissão para acessar alertas Dependabot")
+                logger.error("Verifique se o token tem permissão 'security_events:read'")
                 logger.error(f"Response: {e.response.text}")
             elif e.response.status_code == 404:
-                logger.error("Dependabot alerts não habilitado ou repositório não encontrado.")
-                logger.error("Verifique se o repositório existe e se Dependabot está ativado")
+                logger.error("❌ Endpoint não encontrado ou Dependabot não habilitado")
+                logger.error("Verifique se:")
+                logger.error("  1. O repositório existe e está acessível")
+                logger.error("  2. Dependabot está ativado nas configurações de segurança")
+                logger.error("  3. O nome do repositório está correto (owner/repo)")
             else:
-                logger.error(f"Erro HTTP {e.response.status_code} ao buscar alertas Dependabot: {e}")
+                logger.error(f"❌ Erro HTTP {e.response.status_code} ao buscar alertas Dependabot")
                 logger.error(f"Response: {e.response.text}")
             return []
 
     def get_code_scanning_alerts(self, owner: str, repo: str, state: str = "open") -> List[Dict]:
+        """
+        Busca alertas do Code Scanning (CodeQL) via API do GitHub.
+        
+        Endpoint: GET /repos/{owner}/{repo}/code-scanning/alerts
+        Requer permissão: security_events:read
+        """
         endpoint = f"/repos/{owner}/{repo}/code-scanning/alerts"
         params = {"state": state}
 
         try:
-            logger.info(f"Buscando alertas CodeQL/Code Scanning em: {self.BASE_URL}{endpoint}")
+            logger.info(f"Buscando alertas Code Scanning em: {self.BASE_URL}{endpoint}")
             logger.info(f"Parâmetros: state={state}")
             
             alerts = self._paginate(endpoint, params)
-            logger.info(f"Encontrados {len(alerts)} alertas Code Scanning")
+            logger.info(f"Encontrados {len(alerts)} alertas Code Scanning no estado '{state}'")
             
-            # Log detalhado dos primeiros alertas para debug
+            # Log detalhado para debug
             if len(alerts) > 0:
-                logger.info(f"Primeiro alerta (preview): {alerts[0].get('number', 'N/A')} - {alerts[0].get('rule', {}).get('id', 'N/A')}")
-            
-            # Tentar também buscar alertas de outros estados
-            if len(alerts) == 0:
-                logger.warning("Nenhum alerta CodeQL ABERTO encontrado. Tentando buscar todos os estados...")
-                try:
-                    all_alerts = self._paginate(endpoint, {"state": "dismissed"})
-                    logger.info(f"Encontrados {len(all_alerts)} alertas DISMISSED")
-                    all_alerts_closed = self._paginate(endpoint, {"state": "fixed"})
-                    logger.info(f"Encontrados {len(all_alerts_closed)} alertas FIXED")
-                except Exception as ex:
-                    logger.debug(f"Erro ao buscar outros estados: {ex}")
+                first = alerts[0]
+                rule = first.get('rule', {})
+                logger.info(f"Primeiro alerta: #{first.get('number', 'N/A')} - {rule.get('id', 'N/A')}")
+                logger.debug(f"Severidade: {rule.get('security_severity_level', 'N/A')}")
+                logger.debug(f"Tags: {rule.get('tags', [])}")
+            else:
+                logger.warning("⚠️  Nenhum alerta Code Scanning encontrado no estado 'open'")
+                logger.info("Verificando outros estados para diagnóstico...")
                 
-                logger.warning("Nenhum alerta CodeQL ABERTO encontrado. Verifique se:")
-                logger.warning("  1. CodeQL está configurado no repositório (.github/workflows/codeql.yml)")
-                logger.warning("  2. O token tem permissão 'security_events'")
-                logger.warning("  3. Existem alertas abertos no repositório")
-                logger.warning("  4. CodeQL já executou pelo menos uma vez")
+                # Buscar todos os estados para diagnóstico
+                all_states = []
+                for check_state in ["dismissed", "fixed"]:
+                    try:
+                        state_alerts = self._paginate(endpoint, {"state": check_state})
+                        if state_alerts:
+                            all_states.append((check_state, len(state_alerts)))
+                            logger.info(f"  - {len(state_alerts)} alertas no estado '{check_state}'")
+                    except Exception:
+                        pass
+                
+                if not all_states:
+                    logger.warning("Nenhum alerta Code Scanning encontrado em qualquer estado.")
+                    logger.warning("Possíveis causas:")
+                    logger.warning("  1. CodeQL não está configurado no repositório")
+                    logger.warning("  2. O workflow CodeQL não executou ainda")
+                    logger.warning("  3. O token não tem permissão 'security_events:read'")
+                    logger.warning("  4. Não há vulnerabilidades detectadas no código")
 
             return alerts
+            
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 403:
-                logger.error("Sem permissão para acessar alertas Code Scanning.")
-                logger.error("Verifique se o token tem scope 'security_events'")
+                logger.error("❌ Sem permissão para acessar alertas Code Scanning")
+                logger.error("Verifique se o token tem permissão 'security_events:read'")
                 logger.error(f"Response: {e.response.text}")
             elif e.response.status_code == 404:
-                logger.error("Code Scanning não habilitado ou repositório não encontrado.")
-                logger.error("Verifique se o repositório tem CodeQL configurado")
+                logger.error("❌ Endpoint não encontrado ou Code Scanning não habilitado")
+                logger.error("Verifique se:")
+                logger.error("  1. O repositório tem CodeQL configurado")
+                logger.error("  2. O workflow CodeQL já executou pelo menos uma vez")
+                logger.error("  3. O nome do repositório está correto")
             else:
-                logger.error(f"Erro HTTP {e.response.status_code} ao buscar alertas Code Scanning: {e}")
+                logger.error(f"❌ Erro HTTP {e.response.status_code} ao buscar alertas Code Scanning")
                 logger.error(f"Response: {e.response.text}")
             return []
 
@@ -199,46 +235,86 @@ class GitHubAPIClient:
         return cves
 
     def extract_cves_from_code_scanning(self, alerts: List[Dict]) -> List[Dict]:
+        """
+        Extrai CVEs de alertas Code Scanning.
+        
+        A API do GitHub Code Scanning retorna alertas com CVEs nas tags da regra.
+        Exemplo de tag: "external/cve/CVE-2024-12345"
+        """
         cves = []
+        cves_without_id = []
+        
         for alert in alerts:
             rule = alert.get("rule", {})
-            tags = rule.get("tags", [])
-
+            
+            # Tags podem estar em rule.tags ou diretamente no alert
+            tags = rule.get("tags", []) or alert.get("tags", [])
+            
+            # Buscar CVE nas tags
             cve_id = None
             for tag in tags:
-                if tag.startswith("external/cve/"):
-                    cve_id = tag.split("/")[-1].upper()
-                    break
+                if isinstance(tag, str):
+                    # Formato: "external/cve/CVE-2024-12345"
+                    if "cve" in tag.lower():
+                        parts = tag.split("/")
+                        for part in parts:
+                            if part.upper().startswith("CVE-"):
+                                cve_id = part.upper()
+                                break
+                        if cve_id:
+                            break
 
-            cve_id = sanitize_cve_id(cve_id)
+            most_recent_instance = alert.get("most_recent_instance", {})
+            location = most_recent_instance.get("location", {})
+            
+            # Dados básicos do alerta
+            alert_data = {
+                "source": "Code Scanning",
+                "alert_number": alert.get("number"),
+                "alert_url": alert.get("html_url"),
+                "state": alert.get("state"),
+                "severity": rule.get("security_severity_level") or alert.get("severity") or "unknown",
+                "rule_id": rule.get("id"),
+                "rule_name": rule.get("name"),
+                "rule_description": rule.get("description"),
+                "rule_full_description": rule.get("full_description"),
+                "tool_name": alert.get("tool", {}).get("name"),
+                "tool_version": alert.get("tool", {}).get("version"),
+                "file_path": location.get("path"),
+                "start_line": location.get("start_line"),
+                "end_line": location.get("end_line"),
+                "created_at": alert.get("created_at"),
+                "updated_at": alert.get("updated_at"),
+                "dismissed_at": alert.get("dismissed_at"),
+                "dismissed_reason": alert.get("dismissed_reason"),
+                "dismissed_by": alert.get("dismissed_by", {}).get("login"),
+                "dismissed_comment": alert.get("dismissed_comment"),
+                "tags": tags
+            }
+            
+            # Se encontrou CVE, adiciona à lista
             if cve_id:
-                most_recent_instance = alert.get("most_recent_instance", {})
-                location = most_recent_instance.get("location", {})
-
-                cves.append({
-                    "cve_id": cve_id,
-                    "source": "CodeQL",
-                    "alert_number": alert.get("number"),
-                    "alert_url": alert.get("html_url"),
-                    "state": alert.get("state"),
-                    "severity": rule.get("security_severity_level", "unknown"),
+                cve_id = sanitize_cve_id(cve_id)
+                if cve_id:
+                    alert_data["cve_id"] = cve_id
+                    cves.append(alert_data)
+            else:
+                # Guarda alertas sem CVE para log
+                cves_without_id.append({
+                    "number": alert.get("number"),
                     "rule_id": rule.get("id"),
                     "rule_name": rule.get("name"),
-                    "rule_description": rule.get("description"),
-                    "rule_full_description": rule.get("full_description"),
-                    "tool_name": alert.get("tool", {}).get("name"),
-                    "tool_version": alert.get("tool", {}).get("version"),
-                    "file_path": location.get("path"),
-                    "start_line": location.get("start_line"),
-                    "end_line": location.get("end_line"),
-                    "created_at": alert.get("created_at"),
-                    "updated_at": alert.get("updated_at"),
-                    "dismissed_at": alert.get("dismissed_at"),
-                    "dismissed_reason": alert.get("dismissed_reason"),
                     "tags": tags
                 })
 
-        logger.info(f"Extraídos {len(cves)} CVEs de alertas Code Scanning")
+        logger.info(f"Extraídos {len(cves)} CVEs de {len(alerts)} alertas Code Scanning")
+        
+        if cves_without_id:
+            logger.info(f"{len(cves_without_id)} alertas Code Scanning sem CVE identificado:")
+            for alert in cves_without_id[:5]:  # Log apenas os primeiros 5
+                logger.debug(f"  - Alert #{alert['number']}: {alert['rule_id']} - {alert['rule_name']}")
+                logger.debug(f"    Tags: {alert['tags']}")
+        
         return cves
 
     def close(self):

@@ -61,19 +61,54 @@ jobs:
           echo "::group::Verificando acesso aos alertas de segurança"
           
           # Verificar Dependabot
-          echo "Tentando acessar alertas Dependabot..."
-          curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          echo "=== Tentando acessar alertas Dependabot ==="
+          DEPENDABOT_RESPONSE=$(curl -s -w "\n%{http_code}" \
+               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
                -H "Accept: application/vnd.github+json" \
-               "https://api.github.com/repos/${{ github.repository }}/dependabot/alerts" \
-               | jq '.[] | {number, state, security_advisory: {cve_id, severity}}' || echo "Falha ao acessar Dependabot"
+               "https://api.github.com/repos/${{ github.repository }}/dependabot/alerts")
           
-          # Verificar CodeQL
+          HTTP_CODE=$(echo "$DEPENDABOT_RESPONSE" | tail -n1)
+          BODY=$(echo "$DEPENDABOT_RESPONSE" | sed '$d')
+          
+          echo "Status HTTP: $HTTP_CODE"
+          if [ "$HTTP_CODE" = "200" ]; then
+            ALERT_COUNT=$(echo "$BODY" | jq 'length // 0')
+            echo "Total de alertas: $ALERT_COUNT"
+            if [ "$ALERT_COUNT" -gt 0 ]; then
+              echo "Primeiro alerta:"
+              echo "$BODY" | jq '.[0] | {number, state, cve: .security_advisory.cve_id, severity: .security_advisory.severity}'
+            else
+              echo "Nenhum alerta Dependabot encontrado"
+            fi
+          else
+            echo "Erro ao acessar Dependabot:"
+            echo "$BODY" | jq -r '.message // .'
+          fi
+          
           echo ""
-          echo "Tentando acessar alertas CodeQL..."
-          curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          echo "=== Tentando acessar alertas Code Scanning ==="
+          CODEQL_RESPONSE=$(curl -s -w "\n%{http_code}" \
+               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
                -H "Accept: application/vnd.github+json" \
-               "https://api.github.com/repos/${{ github.repository }}/code-scanning/alerts" \
-               | jq '.[] | {number, state, rule: {id, severity}}' || echo "Falha ao acessar CodeQL"
+               "https://api.github.com/repos/${{ github.repository }}/code-scanning/alerts")
+          
+          HTTP_CODE=$(echo "$CODEQL_RESPONSE" | tail -n1)
+          BODY=$(echo "$CODEQL_RESPONSE" | sed '$d')
+          
+          echo "Status HTTP: $HTTP_CODE"
+          if [ "$HTTP_CODE" = "200" ]; then
+            ALERT_COUNT=$(echo "$BODY" | jq 'length // 0')
+            echo "Total de alertas: $ALERT_COUNT"
+            if [ "$ALERT_COUNT" -gt 0 ]; then
+              echo "Primeiro alerta:"
+              echo "$BODY" | jq '.[0] | {number, state, rule_id: .rule.id, severity: .rule.security_severity_level, tags: .rule.tags}'
+            else
+              echo "Nenhum alerta Code Scanning encontrado"
+            fi
+          else
+            echo "Erro ao acessar Code Scanning:"
+            echo "$BODY" | jq -r '.message // .'
+          fi
           
           echo "::endgroup::"
 
