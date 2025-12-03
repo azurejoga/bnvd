@@ -21,13 +21,13 @@ jobs:
 
       - name: BNVD CVE Enricher
         # Executa a Action local que foi aprimorada
-        uses: ./actions/bnvd-cve-enricher
+        uses: ./.github/actions/bnvd-cve-enricher
         id: bnvd-enricher
         with:
           # O GITHUB_TOKEN é passado automaticamente e tem as permissões definidas no topo do workflow
           github_token: ${{ secrets.GITHUB_TOKEN }}
           # Filtra para mostrar apenas vulnerabilidades de severidade ALTA ou CRÍTICA
-          severity_filter: 'ALL'
+          severity_filter: 'HIGH'
 
       - name: Fazer Upload do Relatório como Artefato
         # O 'if: always()' garante que o relatório seja salvo mesmo que a Action falhe
