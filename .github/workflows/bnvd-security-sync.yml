@@ -30,11 +30,19 @@ on:
 permissions:
   contents: read
   security-events: read
+  issues: read
+  pull-requests: read
 
 jobs:
   security-scan:
     name: Scan e Enriquecimento BNVD
     runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      security-events: read
+      issues: read
+      pull-requests: read
     
     outputs:
       total_cves: ${{ steps.bnvd.outputs.total_cves_found }}
@@ -46,6 +54,28 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+
+      - name: Debug - Check Security Alerts Access
+        continue-on-error: true
+        run: |
+          echo "::group::Verificando acesso aos alertas de segurança"
+          
+          # Verificar Dependabot
+          echo "Tentando acessar alertas Dependabot..."
+          curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+               -H "Accept: application/vnd.github+json" \
+               "https://api.github.com/repos/${{ github.repository }}/dependabot/alerts" \
+               | jq '.[] | {number, state, security_advisory: {cve_id, severity}}' || echo "Falha ao acessar Dependabot"
+          
+          # Verificar CodeQL
+          echo ""
+          echo "Tentando acessar alertas CodeQL..."
+          curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+               -H "Accept: application/vnd.github+json" \
+               "https://api.github.com/repos/${{ github.repository }}/code-scanning/alerts" \
+               | jq '.[] | {number, state, rule: {id, severity}}' || echo "Falha ao acessar CodeQL"
+          
+          echo "::endgroup::"
 
       - name: Run BNVD Security Enricher (Local Action)
         id: bnvd
