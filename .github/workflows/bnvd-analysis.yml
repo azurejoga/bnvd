@@ -1,0 +1,52 @@
+name: Análise de Segurança com BNVD
+
+on:
+  workflow_dispatch: # Permite execução manual
+  schedule:
+    - cron: '0 8 * * 1' # Executa toda segunda-feira às 8h
+
+# Permissões mínimas necessárias para a execução do workflow
+permissions:
+  security-events: read # Para ler alertas de segurança (Dependabot, CodeQL)
+  contents: read      # Para o actions/checkout
+
+jobs:
+  enrich-vulnerabilities:
+    runs-on: ubuntu-latest
+    name: Buscar e Enriquecer Alertas de CVE
+
+    steps:
+      - name: Checkout do Código
+        uses: actions/checkout@v4
+
+      - name: BNVD CVE Enricher
+        # Executa a Action local que foi aprimorada
+        uses: ./actions/bnvd-cve-enricher
+        id: bnvd-enricher
+        with:
+          # O GITHUB_TOKEN é passado automaticamente e tem as permissões definidas no topo do workflow
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Filtra para mostrar apenas vulnerabilidades de severidade ALTA ou CRÍTICA
+          severity_filter: 'ALL'
+
+      - name: Fazer Upload do Relatório como Artefato
+        # O 'if: always()' garante que o relatório seja salvo mesmo que a Action falhe
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorio-de-seguranca-bnvd
+          path: bnvd-security-report.md # O nome do arquivo é definido como output da Action
+          retention-days: 7
+
+      - name: Adicionar Resumo do Job ao Sumário do Workflow
+        if: always()
+        run: |
+          echo "## Resumo da Análise de Segurança BNVD" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **CVEs Totais Encontrados:** ${{ steps.bnvd-enricher.outputs.total_cves_found }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **CVEs Enriquecidos (Filtro: ${{ github.event.inputs.severity_filter || 'HIGH' }}):** ${{ steps.bnvd-enricher.outputs.enriched_cves }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Conteúdo do Relatório:" >> $GITHUB_STEP_SUMMARY
+          # Adiciona o conteúdo do relatório ao sumário para fácil visualização
+          cat bnvd-security-report.md >> $GITHUB_STEP_SUMMARY || echo "_Nenhum relatório foi gerado._" >> $GITHUB_STEP_SUMMARY
+
