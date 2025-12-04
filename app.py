@@ -3,6 +3,7 @@ import json
 import logging
 from flask import Flask, render_template, request, redirect, url_for, flash, Response, jsonify
 from dotenv import load_dotenv
+import requests
 from werkzeug.middleware.proxy_fix import ProxyFix
 from nvd_api import NVDClient
 from utils import (translate_severity, translate_cwe, translate_cvss_metrics, format_date, paginate_results,
@@ -134,6 +135,123 @@ def service_worker():
     response.headers['Expires'] = '0'
     return response
 
+def _search_database_with_sort(vendor, sort_by='published', sort_order='desc', page=1, per_page=20):
+    """
+    Busca vulnerabilidades no banco local com ordenação
+    
+    Args:
+        vendor: Termo de busca por fabricante
+        sort_by: 'published' ou 'modified' para campo de ordenação
+        sort_order: 'asc' ou 'desc'
+        page: Número da página
+        per_page: Resultados por página
+    
+    Returns:
+        Tupla (vulnerabilities, total_count) ou (None, 0) se falhar
+    """
+    try:
+        if not database_url:
+            return None, 0
+        
+        import psycopg2
+        import psycopg2.extras
+        
+        conn = psycopg2.connect(database_url)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        # Definir campo de ordenação
+        order_field = 'last_modified' if sort_by == 'modified' else 'published_date'
+        # 'desc' = DESC (mais recentes primeiro), 'asc' = ASC (mais antigos primeiro)
+        order_direction = 'DESC' if sort_order == 'desc' else 'ASC'
+        
+        logging.debug(f"Ordenação: campo={order_field}, direção={order_direction}, sort_order={sort_order}")
+        
+        # Contar total
+        cursor.execute("""
+            SELECT COUNT(*) FROM vulnerabilities 
+            WHERE descriptions::text ILIKE %s OR configurations::text ILIKE %s
+        """, (f'%{vendor}%', f'%{vendor}%'))
+        total_count = cursor.fetchone()['count']
+        
+        # Buscar dados com ordenação
+        offset = (page - 1) * per_page
+        query = f"""
+            SELECT * FROM vulnerabilities 
+            WHERE descriptions::text ILIKE %s OR configurations::text ILIKE %s 
+            ORDER BY {order_field} {order_direction}
+            LIMIT %s OFFSET %s
+        """
+        cursor.execute(query, (f'%{vendor}%', f'%{vendor}%', per_page, offset))
+        
+        vulnerabilities = []
+        for row in cursor.fetchall():
+            vulnerabilities.append(dict(row))
+        
+        cursor.close()
+        conn.close()
+        
+        logging.info(f"Busca no banco: {total_count} CVEs encontradas para '{vendor}' (ordenação: {sort_by} {sort_order})")
+        return vulnerabilities, total_count
+        
+    except Exception as e:
+        logging.warning(f"Erro ao buscar no banco local: {e}")
+        return None, 0
+
+def _convert_db_to_api_format(db_vulns):
+    """
+    Converte vulnerabilidades do banco para formato da API NVD
+    """
+    if not db_vulns:
+        return []
+    
+    import json
+    from datetime import datetime
+    
+    api_vulns = []
+    for db_vuln in db_vulns:
+        try:
+            # Parse dos campos JSON se necessário
+            descriptions = db_vuln.get('descriptions')
+            if isinstance(descriptions, str):
+                descriptions = json.loads(descriptions)
+            
+            metrics = db_vuln.get('cvss_metrics')
+            if isinstance(metrics, str):
+                metrics = json.loads(metrics)
+            
+            configurations = db_vuln.get('configurations')
+            if isinstance(configurations, str):
+                configurations = json.loads(configurations)
+            
+            # Converter datas para strings ISO (o banco retorna datetime objects)
+            published_date = db_vuln.get('published_date')
+            if published_date and isinstance(published_date, datetime):
+                published_date = published_date.isoformat()
+            
+            last_modified = db_vuln.get('last_modified')
+            if last_modified and isinstance(last_modified, datetime):
+                last_modified = last_modified.isoformat()
+            
+            # Formato da API NVD
+            api_vuln = {
+                'cve': {
+                    'id': db_vuln.get('cve_id'),
+                    'published': published_date,
+                    'lastModified': last_modified,
+                    'descriptions': descriptions or [],
+                    'metrics': metrics or {},
+                    'configurations': configurations or [],
+                    'sourceIdentifier': db_vuln.get('source_identifier'),
+                    'vulnStatus': db_vuln.get('vulnstatus')
+                }
+            }
+            api_vulns.append(api_vuln)
+        except Exception as e:
+            logging.warning(f"Erro ao converter CVE do banco: {e}")
+            continue
+    
+    return api_vulns
+
 @app.route('/busca')
 def busca():
     """Página de busca de vulnerabilidades"""
@@ -156,6 +274,16 @@ def busca():
     cve_id = secure_params.get('cve_id', '')
     severidade = secure_params.get('severidade', '')
     vendor = secure_params.get('vendor', '')
+    
+    # Parâmetros de ordenação (mais recente primeiro por padrão)
+    sort_by = request.args.get('ordenar', 'published')  # 'published' ou 'modified'
+    sort_order = request.args.get('ordem', 'desc')  # 'asc' ou 'desc'
+    
+    # Validar parâmetros de ordenação
+    if sort_by not in ['published', 'modified']:
+        sort_by = 'published'
+    if sort_order not in ['asc', 'desc']:
+        sort_order = 'desc'
 
     # Paginação segura
     page = secure_params.get('page', 1)
@@ -171,39 +299,108 @@ def busca():
     has_filters = any([cve_id, severidade, vendor])
 
     try:
-        # Construir parâmetros básicos da API
-        search_params = {}
-        search_params['resultsPerPage'] = 20
-        search_params['startIndex'] = start_index
+        vulnerabilidades = []
+        total_results = 0
+        source = "nenhuma"  # Para logging
+        
+        # PRIORIDADE 1: Se houver vendor OU severidade → Banco Local (ordenação e filtro exato)
+        if (vendor or severidade) and database_url:
+            logging.info(f"Buscando no banco local: vendor='{vendor}', severidade='{severidade}'")
+            
+            # Para severidade, precisamos de uma busca diferente
+            if severidade and not vendor:
+                # Busca apenas por severidade no banco
+                try:
+                    import psycopg2
+                    import psycopg2.extras
+                    
+                    conn = psycopg2.connect(database_url)
+                    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                    
+                    order_field = 'last_modified' if sort_by == 'modified' else 'published_date'
+                    order_direction = 'ASC' if sort_order == 'desc' else 'DESC'
+                    
+                    cursor.execute("""
+                        SELECT COUNT(*) FROM vulnerabilities 
+                        WHERE cvss_metrics::text ILIKE %s
+                    """, (f'%{severidade}%',))
+                    total_count = cursor.fetchone()['count']
+                    
+                    offset = (page - 1) * per_page
+                    query = f"""
+                        SELECT * FROM vulnerabilities 
+                        WHERE cvss_metrics::text ILIKE %s 
+                        ORDER BY {order_field} {order_direction}
+                        LIMIT %s OFFSET %s
+                    """
+                    cursor.execute(query, (f'%{severidade}%', per_page, offset))
+                    
+                    db_vulns = [dict(row) for row in cursor.fetchall()]
+                    cursor.close()
+                    conn.close()
+                    
+                    if db_vulns and total_count > 0:
+                        api_response = _convert_db_to_api_format(db_vulns)
+                        vulnerabilidades = api_response
+                        total_results = total_count
+                        source = "banco_severidade"
+                        logging.info(f"Banco encontrou {total_count} CVEs com severidade '{severidade}'")
+                except Exception as e:
+                    logging.warning(f"Erro ao buscar severidade no banco: {e}")
+            else:
+                # Busca por vendor (com ou sem severidade)
+                db_vulns, db_total = _search_database_with_sort(vendor, sort_by, sort_order, page, per_page)
+                
+                if db_vulns and db_total > 0:
+                    api_response = _convert_db_to_api_format(db_vulns)
+                    vulnerabilidades = api_response
+                    total_results = db_total
+                    source = "banco_vendor"
+                    logging.info(f"Banco encontrou {db_total} CVEs para '{vendor}' (com ordenação {sort_by} {sort_order})")
+        
+        # PRIORIDADE 2: Se só houver CVE ID → API NVD (busca exata)
+        if not vulnerabilidades and cve_id:
+            logging.info(f"Buscando CVE ID específico na API NVD: {cve_id}")
+            search_params = {}
+            search_params['cveId'] = cve_id
+            search_params['resultsPerPage'] = 20
+            search_params['startIndex'] = start_index
 
-        # Aplicar filtros (já validados pelo sistema de segurança)
-        if cve_id:
-            search_params['cveId'] = cve_id  # Já vem validado e formatado
-
-        if severidade:
-            search_params['cvssV3Severity'] = severidade  # Já validado
-
-        if vendor:
-            search_params['keywordSearch'] = vendor  # Já sanitizado
-            logging.debug(f"Busca por fabricante: {vendor}")
-
-        # Buscar vulnerabilidades apenas se há filtros
-        response = None
-        if has_filters:
-            logging.debug(f"Parâmetros da busca: {search_params}")
             response = nvd_client.search_cves(**search_params)
 
-            # Log da resposta para debug
-            if response:
+            if response and 'vulnerabilities' in response and len(response['vulnerabilities']) > 0:
+                vulnerabilidades = response['vulnerabilities']
                 total_results = response.get('totalResults', 0)
-                logging.info(f"API NVD retornou {total_results} resultados para os parâmetros: {search_params}")
+                source = "api_cve_id"
+                logging.info(f"API NVD retornou CVE exato: {total_results} resultado")
             else:
-                logging.warning("API NVD retornou resposta vazia ou nula")
+                logging.info(f"CVE ID '{cve_id}' não encontrado na API NVD")
+                
+                # Fallback para banco se API não encontrou
+                if database_url:
+                    logging.info(f"Tentando encontrar CVE no banco local como fallback...")
+                    try:
+                        import psycopg2
+                        import psycopg2.extras
+                        
+                        conn = psycopg2.connect(database_url)
+                        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                        cursor.execute("SELECT * FROM vulnerabilities WHERE cve_id = %s LIMIT 1", (cve_id,))
+                        row = cursor.fetchone()
+                        cursor.close()
+                        conn.close()
+                        
+                        if row:
+                            db_vuln = dict(row)
+                            vulnerabilidades = _convert_db_to_api_format([db_vuln])
+                            total_results = 1
+                            source = "banco_fallback_cve"
+                            logging.info(f"CVE encontrado no banco como fallback")
+                    except Exception as e:
+                        logging.warning(f"Erro ao buscar CVE no banco: {e}")
 
-        if response and 'vulnerabilities' in response and len(response['vulnerabilities']) > 0:
-            vulnerabilidades = response['vulnerabilities']
-            total_results = response.get('totalResults', 0)
-
+        # Processar resultados
+        if vulnerabilidades and len(vulnerabilidades) > 0:
             # Traduzir TODAS as descrições das vulnerabilidades encontradas (COMPLETAS)
             for vuln in vulnerabilidades:
                 if 'cve' in vuln and 'descriptions' in vuln['cve']:
@@ -247,7 +444,10 @@ def busca():
                          # Preservar parâmetros de busca
                          cve_id=cve_id,
                          severidade=severidade,
-                         vendor=vendor)
+                         vendor=vendor,
+                         # Parâmetros de ordenação
+                         ordenar=sort_by,
+                         ordem=sort_order)
 
 @app.route('/vulnerabilidade/<cve_id>')
 def detalhes(cve_id):
@@ -301,9 +501,10 @@ def detalhes(cve_id):
         return redirect(url_for('busca'))
 
 
-
-
-
+@app.route('/diretorio-de-certificacoes')
+def diretorio_de_certificacoes():
+    """Página do diretório de certificações"""
+    return render_template('diretorio-de-certificacoes.html')
 
 
 @app.route('/sobre')
@@ -320,6 +521,11 @@ def politica():
 def privacidade():
     """Página de política de privacidade"""
     return render_template('privacidade.html')
+
+@app.route('/treinamentos')
+def treinamentos():
+    """Página de treinamentos e certificações"""
+    return render_template('treinamentos.html')
 
 @app.route('/downloads')
 def downloads():
@@ -766,6 +972,11 @@ def filter_translate_status(status):
     }
     return status_translations.get(status, status)
 
+@app.route('/doacao')
+def doacao():
+    """Página de doações para o BNVD"""
+    return render_template('doacao.html')
+
 @app.route('/busca-por-ano')
 def busca_por_ano():
     """Página de busca por ano com estatísticas"""
@@ -1066,4 +1277,4 @@ def export_news(slug, format):
         return redirect(url_for('noticia_detalhes', slug=slug))
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=False, host='0.0.0.0', port=5000)

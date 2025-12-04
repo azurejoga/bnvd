@@ -412,11 +412,53 @@ class NVDClient:
     
     def get_kev_cves(self, start_index: int = 0, results_per_page: int = 20) -> Optional[Dict[str, Any]]:
         """Busca CVEs que estão no catálogo CISA KEV (Known Exploited Vulnerabilities)"""
-        return self.search_cves(
-            hasKev=True,
-            startIndex=start_index,
-            resultsPerPage=results_per_page
-        )
+        try:
+            # Buscar lista de CISA KEV do endpoint oficial
+            kev_url = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+            logging.info(f"Buscando CISA KEV de {kev_url}")
+            
+            response = requests.get(kev_url, timeout=30)
+            response.raise_for_status()
+            kev_data = response.json()
+            
+            # Extrair dados do CISA KEV
+            kev_vulns = kev_data.get('vulnerabilities', [])
+            total_results = len(kev_vulns)
+            
+            logging.info(f"Encontrados {total_results} CVEs no catálogo CISA KEV")
+            
+            # Implementar paginação
+            end_index = min(start_index + results_per_page, total_results)
+            paginated_vulns = kev_vulns[start_index:end_index]
+            
+            # Formatar dados do CISA KEV para parecer como resposta NVD
+            vulnerabilities = []
+            for kev_vuln in paginated_vulns:
+                cve_id = kev_vuln.get('cveID', '')
+                
+                # Criar estrutura básica a partir do CISA KEV (SEM fazer requisições NVD para evitar timeout)
+                basic_vuln = {
+                    'cve': {
+                        'id': cve_id,
+                        'descriptions': [{
+                            'lang': 'en',
+                            'value': kev_vuln.get('shortDescription', 'Vulnerabilidade explorada ativamente'),
+                            'value_pt': None
+                        }],
+                        'published': kev_vuln.get('dateAdded', ''),
+                        'lastModified': kev_vuln.get('dateAdded', '')
+                    }
+                }
+                vulnerabilities.append(basic_vuln)
+            
+            return {
+                'vulnerabilities': vulnerabilities,
+                'totalResults': total_results
+            }
+            
+        except Exception as e:
+            logging.error(f"Erro ao buscar CVEs KEV: {e}")
+            return {'vulnerabilities': [], 'totalResults': 0}
     
     def search_keyword_exact(self, phrase: str, start_index: int = 0, results_per_page: int = 20) -> Optional[Dict[str, Any]]:
         """Busca CVEs com frase exata na descrição"""

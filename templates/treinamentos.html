@@ -1,0 +1,504 @@
+{% extends "base.html" %}
+
+{% block title %}Treinamentos e Certificação BNVD - BCP™ Certified Professional{% endblock %}
+
+{% block head %}
+{{ super() }}
+<meta name="description" content="Certificação BNVD Certified Professional (BCP™). Treinamentos oficiais em segurança cibernética com acesso ao exame. Instrutores ganham 80% das vendas.">
+<meta name="keywords" content="certificação cibersegurança, treinamento vulnerabilidades, BNVD certified professional, BCP, segurança brasileira, curso online segurança, certificação profissional">
+<style>
+    /* Hero Section */
+    .hero-treinamento {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        padding: 6rem 2rem;
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+    .hero-treinamento h1 {
+        font-size: 3.5rem;
+        font-weight: 800;
+        margin-bottom: 1rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    .hero-treinamento .lead {
+        font-size: 1.4rem;
+        font-weight: 300;
+        margin-bottom: 2rem;
+    }
+    .badge-premium {
+        display: inline-block;
+        background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+        color: #fff;
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        font-size: 0.9rem;
+    }
+
+    /* Benefits Grid */
+    .beneficios-section {
+        padding: 3rem 2rem;
+        background-color: #f8f9fa;
+        margin-bottom: 3rem;
+    }
+    .beneficio-item {
+        text-align: center;
+        padding: 2rem 1.5rem;
+        background: white;
+        border-radius: 0.75rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .beneficio-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    }
+    .beneficio-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+    .beneficio-item h3 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: #007bff;
+    }
+    .beneficio-item p {
+        color: #6c757d;
+        font-size: 0.95rem;
+    }
+
+    /* Cursos Premium */
+    .cursos-section {
+        padding: 3rem 2rem;
+        margin-bottom: 3rem;
+    }
+    .curso-premium {
+        background: white;
+        border: 2px solid #e9ecef;
+        border-radius: 1rem;
+        overflow: hidden;
+        transition: all 0.3s;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .curso-premium:hover {
+        border-color: #007bff;
+        box-shadow: 0 12px 32px rgba(0, 123, 255, 0.2);
+        transform: translateY(-5px);
+    }
+    .curso-header {
+        padding: 2rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 1px solid #dee2e6;
+    }
+    .curso-header h2 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: #343a40;
+    }
+    .curso-tipo {
+        display: inline-block;
+        font-size: 0.85rem;
+        font-weight: 600;
+        padding: 0.35rem 0.75rem;
+        border-radius: 50px;
+        margin-top: 0.5rem;
+    }
+    .tipo-gravado {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    .tipo-vivo {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    .curso-body {
+        padding: 2rem;
+    }
+    .curso-feature {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+    .curso-feature:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+    .feature-icon {
+        font-size: 1.5rem;
+        margin-right: 1rem;
+        color: #007bff;
+        flex-shrink: 0;
+    }
+    .feature-content h4 {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        color: #343a40;
+    }
+    .feature-content p {
+        color: #6c757d;
+        font-size: 0.95rem;
+        margin: 0;
+    }
+    .curso-footer {
+        padding: 2rem;
+        background-color: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+        text-align: center;
+    }
+    .btn-curso {
+        display: inline-block;
+        padding: 0.9rem 2rem;
+        font-size: 1.05rem;
+        font-weight: 700;
+        border-radius: 50px;
+        text-transform: uppercase;
+        transition: all 0.3s;
+        text-decoration: none;
+        color: white;
+    }
+    .btn-gravado {
+        background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    }
+    .btn-gravado:hover {
+        background: linear-gradient(135deg, #1e7e34 0%, #155724 100%);
+        transform: scale(1.05);
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.3);
+    }
+    .btn-vivo {
+        background: linear-gradient(135deg, #dc3545 0%, #bd2130 100%);
+    }
+    .btn-vivo:hover {
+        background: linear-gradient(135deg, #bd2130 0%, #a71d2a 100%);
+        transform: scale(1.05);
+        box-shadow: 0 6px 20px rgba(220, 53, 69, 0.3);
+    }
+
+    /* Certificação Info */
+    .certificacao-info {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-left: 5px solid #ffc107;
+        padding: 2.5rem;
+        border-radius: 0.5rem;
+        margin: 3rem 0;
+    }
+    .certificacao-info h3 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #007bff;
+        margin-bottom: 1rem;
+    }
+    .certificacao-info ul {
+        list-style: none;
+        padding: 0;
+    }
+    .certificacao-info li {
+        padding: 0.5rem 0;
+        color: #6c757d;
+    }
+    .certificacao-info li:before {
+        content: "✓ ";
+        color: #28a745;
+        font-weight: 700;
+        margin-right: 0.5rem;
+    }
+
+    /* Instrutor Section Premium */
+    .instrutor-premium {
+        background: linear-gradient(135deg, #343a40 0%, #23282d 100%);
+        color: white;
+        padding: 4rem 2rem;
+        border-radius: 1rem;
+        margin-top: 4rem;
+        text-align: center;
+    }
+    .instrutor-premium h2 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin-bottom: 1rem;
+    }
+    .earning-highlight {
+        background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+        color: #fff;
+        padding: 1.5rem;
+        border-radius: 0.75rem;
+        margin: 2rem 0;
+        font-size: 1.3rem;
+        font-weight: 700;
+    }
+    .earning-highlight .badge {
+        background: rgba(255,255,255,0.3);
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        display: inline-block;
+        margin-top: 0.5rem;
+    }
+    .instrutor-premium p {
+        font-size: 1.1rem;
+        margin-bottom: 1.5rem;
+        color: #ccc;
+    }
+    .instrutor-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    .btn-instrutor {
+        padding: 0.9rem 2rem;
+        font-size: 1rem;
+        font-weight: 700;
+        border-radius: 50px;
+        text-transform: uppercase;
+        text-decoration: none;
+        transition: all 0.3s;
+        display: inline-block;
+    }
+    .btn-signup {
+        background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+        color: white;
+    }
+    .btn-signup:hover {
+        background: linear-gradient(135deg, #1e7e34 0%, #155724 100%);
+        transform: scale(1.05);
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    }
+    .btn-login {
+        background: white;
+        color: #343a40;
+    }
+    .btn-login:hover {
+        background: #f8f9fa;
+        transform: scale(1.05);
+    }
+
+    /* CTA Section */
+    .cta-section {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        padding: 3rem 2rem;
+        border-radius: 1rem;
+        text-align: center;
+        margin-top: 3rem;
+    }
+    .cta-section h3 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+    .cta-section p {
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+    }
+
+    @media (max-width: 768px) {
+        .hero-treinamento h1 {
+            font-size: 2.2rem;
+        }
+        .hero-treinamento .lead {
+            font-size: 1.1rem;
+        }
+        .curso-premium {
+            margin-bottom: 2rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-treinamento">
+    <div class="badge-premium">🎓 PROGRAMA OFICIAL DE CERTIFICAÇÃO</div>
+    <h1>BNVD Certified Professional™ (BCP)</h1>
+    <p class="lead">Torne-se um especialista reconhecido em vulnerabilidades cibernéticas e impulsione sua carreira</p>
+</div>
+
+<!-- Benefícios -->
+<div class="container beneficios-section">
+    <div class="row">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="beneficio-item">
+                <div class="beneficio-icon">🎯</div>
+                <h3>100% Prático</h3>
+                <p>Aprenda com casos reais e exemplos do banco de dados BNVD</p>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="beneficio-item">
+                <div class="beneficio-icon">⏱️</div>
+                <h3>Seu Ritmo</h3>
+                <p>Estude quando quiser, à seu próprio ritmo</p>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="beneficio-item">
+                <div class="beneficio-icon">📜</div>
+                <h3>Certificado</h3>
+                <p>Receba reconhecimento profissional internacional</p>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="beneficio-item">
+                <div class="beneficio-icon">💼</div>
+                <h3>Carreira</h3>
+                <p>Abra portas para oportunidades em segurança</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cursos -->
+<div class="container cursos-section">
+    <h2 style="text-align: center; font-size: 2.5rem; font-weight: 800; margin-bottom: 3rem; color: #343a40;">Escolha Seu Caminho de Aprendizado</h2>
+    
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="curso-premium">
+                <div class="curso-header">
+                    <h2>📚 Treinamento Gravado</h2>
+                    <div class="curso-tipo tipo-gravado">AUTOSSUFICIENTE</div>
+                </div>
+                <div class="curso-body">
+                    <div class="curso-feature">
+                        <div class="feature-icon">✅</div>
+                        <div class="feature-content">
+                            <h4>Aulas Completas em Vídeo</h4>
+                            <p>Acesso imediato a todas as aulas, sem restrição de tempo</p>
+                        </div>
+                    </div>
+                    <div class="curso-feature">
+                        <div class="feature-icon">✅</div>
+                        <div class="feature-content">
+                            <h4>Estude No Seu Tempo</h4>
+                            <p>Pause, retroceda e revise quantas vezes precisar</p>
+                        </div>
+                    </div>
+                    <div class="curso-feature">
+                        <div class="feature-icon">✅</div>
+                        <div class="feature-content">
+                            <h4>Exame Já Incluído</h4>
+                            <p>Acesso completo ao exame oficial BCP™</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="curso-footer">
+                    <a href="https://treinamentos.bnvd.org/home/course/treinamento-para-a-certifica%C3%A7%C3%A3o-bnvd-certified-professional-bcp-gravado/7" target="_blank" class="btn-curso btn-gravado">🎬 Acessar Treinamento Gravado</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="curso-premium">
+                <div class="curso-header">
+                    <h2>🎤 Treinamento Ao Vivo</h2>
+                    <div class="curso-tipo tipo-vivo">INTERATIVO</div>
+                </div>
+                <div class="curso-body">
+                    <div class="curso-feature">
+                        <div class="feature-icon">✅</div>
+                        <div class="feature-content">
+                            <h4>Instrutor Especialista</h4>
+                            <p>Aprenda diretamente com profissional certificado BNVD</p>
+                        </div>
+                    </div>
+                    <div class="curso-feature">
+                        <div class="feature-icon">✅</div>
+                        <div class="feature-content">
+                            <h4>Interação em Tempo Real</h4>
+                            <p>Tire dúvidas instantaneamente com o especialista</p>
+                        </div>
+                    </div>
+                    <div class="curso-feature">
+                        <div class="feature-icon">✅</div>
+                        <div class="feature-content">
+                            <h4>Networking Profissional</h4>
+                            <p>Conecte-se com outros profissionais de segurança</p>
+                        </div>
+                    </div>
+                    <div class="curso-feature">
+                        <div class="feature-icon">✅</div>
+                        <div class="feature-content">
+                            <h4>Gravações Inclusas</h4>
+                            <p>Revise as aulas gravadas posteriormente se precisar</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="curso-footer">
+                    <a href="https://treinamentos.bnvd.org/home/course/treinamento-oficial-para-a-certifica%C3%A7%C3%A3o-bnvd-certified-professional-ao-vivo/8" target="_blank" class="btn-curso btn-vivo">🎯 Acessar Treinamento ao Vivo</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Certificação Info -->
+<div class="container">
+    <div class="certificacao-info">
+        <h3>🏆 O que você ganha com a Certificação BNVD Certified Professional™ (BCP)</h3>
+        <ul>
+            <li>Reconhecimento profissional internacionalmente aceito</li>
+            <li>Domínio comprovado da plataforma BNVD e análise de vulnerabilidades</li>
+            <li>Diferencial competitivo no mercado de segurança cibernética</li>
+            <li>Credencial válida para sempre - sem prazo de expiração</li>
+            <li>Acesso à comunidade exclusiva de profissionais certificados</li>
+            <li>Suporte técnico prioritário na plataforma BNVD</li>
+        </ul>
+    </div>
+</div>
+
+<!-- Diretório de Certificados -->
+<div class="container text-center my-5">
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <h3 class="card-title h4 fw-bold text-primary">Diretório de Profissionais Certificados</h3>
+            <p class="card-text text-muted">Encontre e valide profissionais que possuem a certificação BNVD Certified Professional™ (BCP).</p>
+            <a href="{{ url_for('diretorio_de_certificacoes') }}" class="btn btn-primary">
+                <i class="fas fa-search me-2"></i>
+                Acessar Diretório
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Instrutor Section -->
+<div class="container instrutor-premium">
+    <h2>💰 Become a BNVD Instructor</h2>
+    <p>Compartilhe seu conhecimento e ganhe dinheiro ensinando outros profissionais</p>
+    
+    <div class="earning-highlight">
+        Ganhe <strong>80%</strong> das vendas dos seus cursos
+        <div class="badge">Remuneração Mais Competitiva do Mercado</div>
+    </div>
+
+    <div style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 0.75rem; margin: 2rem 0;">
+        <h4 style="font-size: 1.2rem; margin-bottom: 1rem;">Como Funciona:</h4>
+        <div style="text-align: left; display: inline-block;">
+            <p style="margin: 0.5rem 0;">✓ Cadastre-se como instrutor na plataforma</p>
+            <p style="margin: 0.5rem 0;">✓ Crie e publique seus cursos</p>
+            <p style="margin: 0.5rem 0;">✓ Receba 80% de cada venda realizada</p>
+            <p style="margin: 0.5rem 0;">✓ Suporte completo da plataforma BNVD</p>
+            <p style="margin: 0.5rem 0;">✓ Ferramentas profissionais incluídas</p>
+        </div>
+    </div>
+
+    <div class="instrutor-buttons">
+        <a href="https://treinamentos.bnvd.org/home/sign_up" target="_blank" class="btn-instrutor btn-signup">👉 Cadastrar Como Instrutor</a>
+        <a href="https://treinamentos.bnvd.org/home/login" target="_blank" class="btn-instrutor btn-login">👉 Fazer Login</a>
+    </div>
+</div>
+
+<!-- CTA Final -->
+<div class="container cta-section">
+    <h3>Pronto para transformar sua carreira?</h3>
+    <p>Comece a estudar hoje e receba sua certificação BNVD Certified Professional™</p>
+    <a href="https://treinamentos.bnvd.org/" target="_blank" style="display: inline-block; background: white; color: #007bff; padding: 0.9rem 2rem; border-radius: 50px; font-weight: 700; text-decoration: none; transition: all 0.3s;">🚀 Explorar Treinamentos Agora</a>
+</div>
+
+<div style="height: 3rem;"></div>
+{% endblock %}

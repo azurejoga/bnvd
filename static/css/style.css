@@ -634,3 +634,53 @@ code {
         animation: none !important;
     }
 }
+
+/* Banner de Certificação */
+.certification-banner {
+    background: linear-gradient(135deg, #005c97, #363795);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 92, 151, 0.4);
+}
+
+.certification-banner::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
+    animation: rotate 15s linear infinite;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+
+/* Banner de Certificação */
+.certification-banner {
+    background: linear-gradient(135deg, #005c97, #363795);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 92, 151, 0.4);
+}
+
+.certification-banner::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
+    animation: rotate 15s linear infinite;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+

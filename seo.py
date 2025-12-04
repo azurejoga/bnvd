@@ -262,15 +262,19 @@ class SEOManager:
         main_urls = [
             {'loc': self.base_url, 'priority': '1.0', 'changefreq': 'daily'},
             {'loc': f"{self.base_url}/busca", 'priority': '0.9', 'changefreq': 'weekly'},
-            {'loc': f"{self.base_url}/recentes", 'priority': '0.8', 'changefreq': 'daily'},
-            {'loc': f"{self.base_url}/sobre", 'priority': '0.7', 'changefreq': 'monthly'},
-            {'loc': f"{self.base_url}/politica", 'priority': '0.6', 'changefreq': 'monthly'},
+            {'loc': f"{self.base_url}/recentes", 'priority': '0.9', 'changefreq': 'daily'},
+            {'loc': f"{self.base_url}/kev", 'priority': '0.8', 'changefreq': 'daily'},
+            {'loc': f"{self.base_url}/sobre", 'priority': '0.8', 'changefreq': 'monthly'},
+            {'loc': f"{self.base_url}/politica-divulgacao", 'priority': '0.7', 'changefreq': 'yearly'},
+            {'loc': f"{self.base_url}/privacidade", 'priority': '0.7', 'changefreq': 'yearly'},
             {'loc': f"{self.base_url}/busca-por-ano", 'priority': '0.8', 'changefreq': 'weekly'},
-            {'loc': f"{self.base_url}/5recentes", 'priority': '0.9', 'changefreq': 'daily'},
-            {'loc': f"{self.base_url}/noticias", 'priority': '0.9', 'changefreq': 'hourly'},
+            {'loc': f"{self.base_url}/noticias", 'priority': '0.9', 'changefreq': 'daily'},
             {'loc': f"{self.base_url}/ver-todas-noticias", 'priority': '0.8', 'changefreq': 'daily'},
-            {'loc': f"{self.base_url}/downloads", 'priority': '0.7', 'changefreq': 'monthly'},
-            {'loc': f"{self.base_url}/privacidade", 'priority': '0.6', 'changefreq': 'monthly'},
+            {'loc': f"{self.base_url}/downloads", 'priority': '0.8', 'changefreq': 'monthly'},
+            {'loc': f"{self.base_url}/mitre-attack", 'priority': '0.8', 'changefreq': 'monthly'},
+            {'loc': f"{self.base_url}/treinamentos", 'priority': '0.9', 'changefreq': 'monthly'},
+            {'loc': f"{self.base_url}/doacao", 'priority': '0.7', 'changefreq': 'monthly'},
+            {'loc': f"{self.base_url}/api/v1/docs", 'priority': '0.8', 'changefreq': 'monthly'},
         ]
         
         # Buscar CVEs do banco de dados

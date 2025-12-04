@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Vulnerabilidades Exploradas Ativamente (KEV) - BNVD{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="fas fa-exclamation-circle text-danger me-3"></i>
+                Vulnerabilidades Exploradas Ativamente (CISA KEV)
+            </h1>
+            <p class="lead text-muted">
+                Catálogo oficial do CISA de vulnerabilidades que estão sendo exploradas ativamente por invasores na natureza.
+            </p>
+        </div>
+    </div>
+
+    {% if total_results > 0 %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-warning me-2"></i>
+            <strong>{{ "{:,}".format(total_results).replace(',', '.') }} vulnerabilidades</strong> estão sendo exploradas ativamente. 
+            Priorize a aplicação de patches para essas vulnerabilidades!
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <div class="row">
+            {% for vuln in vulnerabilidades %}
+                <div class="col-12 mb-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <!-- CVE ID -->
+                                    <h5 class="card-title text-danger mb-2">
+                                        <a href="{{ url_for('detalhes', cve_id=vuln.cve.id) }}" class="text-decoration-none">
+                                            {{ vuln.cve.id }}
+                                        </a>
+                                    </h5>
+
+                                    <!-- Datas -->
+                                    <div class="text-muted small mb-3">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        Publicado: {{ vuln.cve.published | format_date }}
+                                        {% if vuln.cve.lastModified %}
+                                            <span class="ms-3">
+                                                <i class="fas fa-edit me-1"></i>
+                                                Atualizado: {{ vuln.cve.lastModified | format_date }}
+                                            </span>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Descrição -->
+                                    {% if vuln.cve.descriptions %}
+                                        {% set description_found = namespace(value=false) %}
+                                        {% for desc in vuln.cve.descriptions %}
+                                            {% if desc.lang == 'en' and not description_found.value %}
+                                                <p class="card-text">
+                                                    {% if desc.value_pt and desc.value_pt.strip() and desc.value_pt != desc.value %}
+                                                        {{ desc.value_pt[:300] }}
+                                                    {% elif desc.value and desc.value.strip() %}
+                                                        {{ desc.value[:300] }}
+                                                    {% else %}
+                                                        <em class="text-muted">Descrição não disponível</em>
+                                                    {% endif %}
+                                                    {% if (desc.value_pt or desc.value)|length > 300 %}...{% endif %}
+                                                </p>
+                                                {% set description_found.value = true %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-md-4 text-md-end">
+                                    <!-- Score CVSS -->
+                                    {% if vuln.cve.metrics %}
+                                        {% set score = vuln.cve.metrics | extract_cvss_score %}
+                                        {% set severity = vuln.cve.metrics | extract_severity %}
+                                        {% if score %}
+                                            <div class="mb-3">
+                                                <span class="h4 text-danger">{{ "%.1f"|format(score) }}</span>
+                                                <small class="text-muted">/10.0</small>
+                                            </div>
+                                            {% if severity %}
+                                                <div class="mb-3">
+                                                    <span class="badge bg-danger">{{ severity | translate_severity }}</span>
+                                                </div>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+
+                                    <!-- CWE -->
+                                    {% if vuln.cve.weaknesses %}
+                                        <div class="mb-3">
+                                            {% for weakness in vuln.cve.weaknesses[:2] %}
+                                                {% for desc in weakness.description %}
+                                                    {% if desc.lang == 'en' %}
+                                                        <span class="badge bg-light text-dark border me-1">
+                                                            {{ desc.value | translate_cwe }}
+                                                        </span>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+
+                                    <a href="{{ url_for('detalhes', cve_id=vuln.cve.id) }}" class="btn btn-outline-danger btn-sm">
+                                        <i class="fas fa-eye me-1"></i>Ver Detalhes
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+
+            <!-- Paginação -->
+            {% if total_pages > 1 %}
+            <nav aria-label="Navegação de páginas">
+                <ul class="pagination justify-content-center">
+                    <!-- Primeira página -->
+                    {% if page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('kev', page=1) }}" aria-label="Ir para primeira página" title="Primeira página">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Página anterior -->
+                    {% if page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('kev', page=page-1) }}" aria-label="Ir para página anterior" title="Página anterior">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Páginas -->
+                    {% for p in range([1, page-2]|max, [total_pages+1, page+3]|min) %}
+                        {% if p == page %}
+                        <li class="page-item active">
+                            <span class="page-link" aria-label="Página atual, página {{ p }}" aria-current="page">{{ p }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('kev', page=p) }}" aria-label="Ir para página {{ p }}" title="Página {{ p }}">
+                                {{ p }}
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <!-- Próxima página -->
+                    {% if page < total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('kev', page=page+1) }}" aria-label="Ir para próxima página" title="Próxima página">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Última página -->
+                    {% if page < total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('kev', page=total_pages) }}" aria-label="Ir para última página" title="Última página">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            <i class="fas fa-info-circle me-2"></i>
+            Nenhuma vulnerabilidade explorada ativamente no momento.
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.pagination .page-link {
+    color: #dc3545;
+}
+.pagination .page-item.active .page-link {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+</style>
+{% endblock %}

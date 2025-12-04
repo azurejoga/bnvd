@@ -788,12 +788,20 @@ def format_date(date_string: str) -> str:
         return ""
     
     try:
-        # Parse da data ISO
-        dt = datetime.fromisoformat(date_string.replace('Z', '+00:00'))
+        from datetime import datetime as dt_class
+        
+        # Se já é um datetime object, usar diretamente
+        if isinstance(date_string, dt_class):
+            dt = date_string
+        else:
+            # Parse da data ISO
+            dt = dt_class.fromisoformat(str(date_string).replace('Z', '+00:00'))
+        
         # Formato brasileiro
         return dt.strftime('%d/%m/%Y às %H:%M')
-    except (ValueError, AttributeError):
-        return date_string
+    except (ValueError, AttributeError, TypeError) as e:
+        logging.warning(f"Erro ao formatar data '{date_string}': {e}")
+        return str(date_string)[:10] if date_string else ""
 
 def extract_cvss_score(metrics: Dict[str, Any]) -> Optional[float]:
     """Extrai score CVSS de métricas"""

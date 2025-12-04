@@ -442,6 +442,45 @@
             </div>
             {% endif %}
             
+            <!-- Analisar com IA -->
+            <div class="card border-0 shadow-sm mb-3 border-success">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-robot me-2"></i>Analisar com IA
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted mb-3">
+                        Use inteligência artificial para obter análise detalhada, recomendações de mitigação e impacto potencial desta vulnerabilidade.
+                    </p>
+                    {% set chatgpt_prompt = "Analise a vulnerabilidade " ~ cve.id ~ " em detalhes. " %}
+                    {% if cve.descriptions %}
+                        {% for desc in cve.descriptions %}
+                            {% if desc.lang == 'en' %}
+                                {% set chatgpt_prompt = chatgpt_prompt ~ "Descrição: " ~ desc.value[:500] ~ ". " %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                    {% if cve.metrics %}
+                        {% set score = cve.metrics | extract_cvss_score %}
+                        {% set severity = cve.metrics | extract_severity %}
+                        {% if score %}
+                            {% set chatgpt_prompt = chatgpt_prompt ~ "Score CVSS: " ~ score ~ "/10. Severidade: " ~ severity ~ ". " %}
+                        {% endif %}
+                    {% endif %}
+                    {% set chatgpt_prompt = chatgpt_prompt ~ "Por favor, forneça em português brasileiro: 1) Resumo executivo da vulnerabilidade 2) Impacto potencial nos sistemas afetados 3) Vetores de ataque comuns 4) Recomendações de mitigação e remediação 5) Indicadores de comprometimento (IoCs) se aplicável." %}
+                    <a href="https://chat.openai.com/?q={{ chatgpt_prompt | urlencode }}" 
+                       target="_blank" 
+                       class="btn btn-success w-100 mb-2">
+                        <i class="fas fa-comments me-2"></i>Analisar no ChatGPT
+                    </a>
+                    <small class="text-muted d-block text-center">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Abre o ChatGPT com contexto pré-preenchido
+                    </small>
+                </div>
+            </div>
+            
             <!-- Ações -->
             <div class="card border-0 shadow-sm mb-3">
                 <div class="card-body text-center">
