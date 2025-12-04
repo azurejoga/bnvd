@@ -82,20 +82,48 @@ def main():
         retry_attempts=retry_attempts
     )
     
+    dependabot_alerts = []
+    codeql_alerts = []
+    dependabot_cves = []
+    codeql_cves = []
+    
     try:
         dependabot_alerts = github_client.get_dependabot_alerts(owner, repo)
+        logger.info(f"Alertas Dependabot obtidos: {len(dependabot_alerts)}")
+    except Exception as e:
+        logger.warning(f"Falha ao obter alertas Dependabot: {e}")
+        log_warning(f"Não foi possível obter alertas Dependabot: {e}")
+    
+    try:
         codeql_alerts = github_client.get_code_scanning_alerts(owner, repo)
-        
-        dependabot_cves = github_client.extract_cves_from_dependabot(dependabot_alerts)
-        codeql_cves = github_client.extract_cves_from_code_scanning(codeql_alerts)
-        
-        all_cves = dependabot_cves + codeql_cves
-        unique_cves = deduplicate_cves(all_cves)
-        
-        logger.info(f"Total de CVEs únicos encontrados: {len(unique_cves)}")
-        
-    finally:
-        github_client.close()
+        logger.info(f"Alertas Code Scanning obtidos: {len(codeql_alerts)}")
+    except Exception as e:
+        logger.warning(f"Falha ao obter alertas Code Scanning: {e}")
+        log_warning(f"Não foi possível obter alertas Code Scanning: {e}")
+    
+    try:
+        if dependabot_alerts:
+            dependabot_cves = github_client.extract_cves_from_dependabot(dependabot_alerts)
+            logger.info(f"CVEs extraídos de Dependabot: {len(dependabot_cves)}")
+    except Exception as e:
+        logger.warning(f"Erro ao processar alertas Dependabot: {e}")
+        log_warning(f"Falha ao extrair CVEs de alertas Dependabot: {e}")
+    
+    try:
+        if codeql_alerts:
+            codeql_cves = github_client.extract_cves_from_code_scanning(codeql_alerts)
+            logger.info(f"CVEs extraídos de Code Scanning: {len(codeql_cves)}")
+    except Exception as e:
+        logger.warning(f"Erro ao processar alertas Code Scanning: {e}")
+        log_warning(f"Falha ao extrair CVEs de alertas Code Scanning: {e}")
+    
+    github_client.close()
+    
+    all_cves = dependabot_cves + codeql_cves
+    unique_cves = deduplicate_cves(all_cves)
+    
+    logger.info(f"CVEs encontrados - Dependabot: {len(dependabot_cves)}, Code Scanning: {len(codeql_cves)}")
+    logger.info(f"Total de CVEs únicos: {len(unique_cves)}")
     
     log_group_end()
     

@@ -102,6 +102,12 @@ def parse_timestamp(ts: str) -> Optional[datetime]:
 
 
 def sanitize_cve_id(cve_id: Optional[str]) -> Optional[str]:
+    """
+    Valida e normaliza um ID de CVE.
+    
+    Formato válido: CVE-YYYY-NNNNN (ex: CVE-2024-12345)
+    Retorna None se o ID não for válido.
+    """
     if not cve_id:
         return None
     cve_id = cve_id.strip().upper()
@@ -112,6 +118,27 @@ def sanitize_cve_id(cve_id: Optional[str]) -> Optional[str]:
                 int(parts[1])
                 int(parts[2])
                 return cve_id
+            except ValueError:
+                pass
+    return None
+
+
+def sanitize_cwe_id(cwe_id: Optional[str]) -> Optional[str]:
+    """
+    Valida e normaliza um ID de CWE.
+    
+    Formato válido: CWE-NNN (ex: CWE-89, CWE-22)
+    Retorna None se o ID não for válido.
+    """
+    if not cwe_id:
+        return None
+    cwe_id = cwe_id.strip().upper()
+    if cwe_id.startswith("CWE-"):
+        parts = cwe_id.split("-")
+        if len(parts) == 2:
+            try:
+                int(parts[1])
+                return cwe_id
             except ValueError:
                 pass
     return None

@@ -2,7 +2,7 @@ import requests
 from typing import Any, Dict, List, Optional
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
-from .utils import logger, sanitize_cve_id
+from .utils import logger, sanitize_cve_id, sanitize_cwe_id
 
 
 class GitHubAPIClient:
@@ -193,22 +193,36 @@ class GitHubAPIClient:
             return []
 
     def extract_cves_from_dependabot(self, alerts: List[Dict]) -> List[Dict]:
+        """
+        Extrai CVEs de alertas Dependabot.
+        
+        Endpoint: GET /repos/{owner}/{repo}/dependabot/alerts
+        Os alertas contêm security_advisory com cve_id ou identifiers.
+        """
+        if not alerts:
+            return []
+            
         cves = []
         for alert in alerts:
-            security_advisory = alert.get("security_advisory", {})
+            if not alert or not isinstance(alert, dict):
+                continue
+                
+            security_advisory = alert.get("security_advisory") or {}
             cve_id = security_advisory.get("cve_id")
 
             if not cve_id:
-                identifiers = security_advisory.get("identifiers", [])
+                identifiers = security_advisory.get("identifiers") or []
                 for identifier in identifiers:
-                    if identifier.get("type") == "CVE":
+                    if isinstance(identifier, dict) and identifier.get("type") == "CVE":
                         cve_id = identifier.get("value")
                         break
 
             cve_id = sanitize_cve_id(cve_id)
             if cve_id:
-                dependency = alert.get("dependency", {})
-                package = dependency.get("package", {})
+                dependency = alert.get("dependency") or {}
+                package = dependency.get("package") or {}
+                security_vulnerability = alert.get("security_vulnerability") or {}
+                first_patched = security_vulnerability.get("first_patched_version") or {}
 
                 cves.append({
                     "cve_id": cve_id,
@@ -216,19 +230,20 @@ class GitHubAPIClient:
                     "alert_number": alert.get("number"),
                     "alert_url": alert.get("html_url"),
                     "state": alert.get("state"),
-                    "severity": security_advisory.get("severity", "unknown"),
+                    "severity": security_advisory.get("severity") or "unknown",
                     "package_name": package.get("name"),
                     "package_ecosystem": package.get("ecosystem"),
-                    "vulnerable_version_range": dependency.get("scope"),
-                    "first_patched_version": alert.get("security_vulnerability", {}).get("first_patched_version", {}).get("identifier"),
+                    "vulnerable_version_range": security_vulnerability.get("vulnerable_version_range"),
+                    "first_patched_version": first_patched.get("identifier"),
                     "ghsa_id": security_advisory.get("ghsa_id"),
                     "summary": security_advisory.get("summary"),
                     "description": security_advisory.get("description"),
                     "published_at": security_advisory.get("published_at"),
                     "updated_at": security_advisory.get("updated_at"),
-                    "references": security_advisory.get("references", []),
-                    "cvss": security_advisory.get("cvss", {}),
-                    "cwes": security_advisory.get("cwes", [])
+                    "references": security_advisory.get("references") or [],
+                    "cvss": security_advisory.get("cvss") or {},
+                    "cvss_severities": security_advisory.get("cvss_severities") or {},
+                    "cwes": security_advisory.get("cwes") or []
                 })
 
         logger.info(f"Extraídos {len(cves)} CVEs de alertas Dependabot")
@@ -236,26 +251,37 @@ class GitHubAPIClient:
 
     def extract_cves_from_code_scanning(self, alerts: List[Dict]) -> List[Dict]:
         """
-        Extrai CVEs de alertas Code Scanning.
+        Extrai CVEs e CWEs de alertas Code Scanning.
         
-        A API do GitHub Code Scanning retorna alertas com CVEs nas tags da regra.
-        Exemplo de tag: "external/cve/CVE-2024-12345"
+        A API do GitHub Code Scanning retorna alertas com CVEs/CWEs nas tags da regra.
+        Exemplos de tags: 
+          - "external/cve/CVE-2024-12345" (CVE)
+          - "external/cwe/cwe-89" (CWE)
+        
+        Nota: Alertas CodeQL geralmente contêm CWEs, não CVEs.
+        CVEs são mais comuns em alertas Dependabot.
         """
+        if not alerts:
+            return []
+        
         cves = []
         cves_without_id = []
         
         for alert in alerts:
-            rule = alert.get("rule", {})
+            if not alert or not isinstance(alert, dict):
+                continue
+                
+            rule = alert.get("rule") or {}
             
-            # Tags podem estar em rule.tags ou diretamente no alert
-            tags = rule.get("tags", []) or alert.get("tags", [])
+            tags = rule.get("tags") or alert.get("tags") or []
             
-            # Buscar CVE nas tags
             cve_id = None
+            cwes = []
+            
             for tag in tags:
                 if isinstance(tag, str):
-                    # Formato: "external/cve/CVE-2024-12345"
-                    if "cve" in tag.lower():
+                    tag_lower = tag.lower()
+                    if "/cve/" in tag_lower or tag_lower.startswith("cve-"):
                         parts = tag.split("/")
                         for part in parts:
                             if part.upper().startswith("CVE-"):
@@ -263,11 +289,30 @@ class GitHubAPIClient:
                                 break
                         if cve_id:
                             break
+                    
+                    if "/cwe/" in tag_lower or "cwe-" in tag_lower:
+                        parts = tag.split("/")
+                        for part in parts:
+                            part_lower = part.lower()
+                            if part_lower.startswith("cwe-"):
+                                cwe_num = part_lower.replace("cwe-", "")
+                                try:
+                                    int(cwe_num)
+                                    cwe_formatted = f"CWE-{cwe_num}"
+                                    sanitized_cwe = sanitize_cwe_id(cwe_formatted)
+                                    if sanitized_cwe and sanitized_cwe not in cwes:
+                                        cwes.append(sanitized_cwe)
+                                except ValueError:
+                                    pass
+                                break
 
-            most_recent_instance = alert.get("most_recent_instance", {})
-            location = most_recent_instance.get("location", {})
+            most_recent_instance = alert.get("most_recent_instance") or {}
+            location_raw = most_recent_instance.get("location")
+            location = location_raw if isinstance(location_raw, dict) else {}
             
-            # Dados básicos do alerta
+            tool = alert.get("tool") or {}
+            dismissed_by = alert.get("dismissed_by") or {}
+            
             alert_data = {
                 "source": "Code Scanning",
                 "alert_number": alert.get("number"),
@@ -278,8 +323,8 @@ class GitHubAPIClient:
                 "rule_name": rule.get("name"),
                 "rule_description": rule.get("description"),
                 "rule_full_description": rule.get("full_description"),
-                "tool_name": alert.get("tool", {}).get("name"),
-                "tool_version": alert.get("tool", {}).get("version"),
+                "tool_name": tool.get("name"),
+                "tool_version": tool.get("version"),
                 "file_path": location.get("path"),
                 "start_line": location.get("start_line"),
                 "end_line": location.get("end_line"),
@@ -287,33 +332,34 @@ class GitHubAPIClient:
                 "updated_at": alert.get("updated_at"),
                 "dismissed_at": alert.get("dismissed_at"),
                 "dismissed_reason": alert.get("dismissed_reason"),
-                "dismissed_by": alert.get("dismissed_by", {}).get("login"),
+                "dismissed_by": dismissed_by.get("login"),
                 "dismissed_comment": alert.get("dismissed_comment"),
-                "tags": tags
+                "tags": tags,
+                "cwes": cwes
             }
             
-            # Se encontrou CVE, adiciona à lista
             if cve_id:
                 cve_id = sanitize_cve_id(cve_id)
                 if cve_id:
                     alert_data["cve_id"] = cve_id
                     cves.append(alert_data)
             else:
-                # Guarda alertas sem CVE para log
                 cves_without_id.append({
                     "number": alert.get("number"),
                     "rule_id": rule.get("id"),
                     "rule_name": rule.get("name"),
-                    "tags": tags
+                    "tags": tags,
+                    "cwes": cwes
                 })
 
         logger.info(f"Extraídos {len(cves)} CVEs de {len(alerts)} alertas Code Scanning")
         
         if cves_without_id:
-            logger.info(f"{len(cves_without_id)} alertas Code Scanning sem CVE identificado:")
-            for alert in cves_without_id[:5]:  # Log apenas os primeiros 5
-                logger.debug(f"  - Alert #{alert['number']}: {alert['rule_id']} - {alert['rule_name']}")
-                logger.debug(f"    Tags: {alert['tags']}")
+            cwe_only_count = sum(1 for a in cves_without_id if a.get("cwes"))
+            logger.info(f"{len(cves_without_id)} alertas Code Scanning sem CVE ({cwe_only_count} com CWEs apenas)")
+            for alert_info in cves_without_id[:5]:
+                cwes_str = ", ".join(alert_info.get("cwes", [])) or "nenhum"
+                logger.debug(f"  - Alert #{alert_info['number']}: {alert_info['rule_id']} - CWEs: {cwes_str}")
         
         return cves
 
