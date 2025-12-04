@@ -117,6 +117,8 @@ jobs:
         uses: ./.github/actions/bnvd-security-enricher
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          dependabot_token: ${{ secrets.DEPENDABOT_PAT }}
+          include_cwe_only: "true"
           bnvd_api_url: "https://bnvd.org/api/v1"
           nvd_api_key: ${{ secrets.NVD_API_KEY }}
           include_pt: "true"

@@ -249,7 +249,7 @@ class GitHubAPIClient:
         logger.info(f"Extraídos {len(cves)} CVEs de alertas Dependabot")
         return cves
 
-    def extract_cves_from_code_scanning(self, alerts: List[Dict]) -> List[Dict]:
+    def extract_cves_from_code_scanning(self, alerts: List[Dict], include_cwe_only: bool = False) -> tuple:
         """
         Extrai CVEs e CWEs de alertas Code Scanning.
         
@@ -260,12 +260,21 @@ class GitHubAPIClient:
         
         Nota: Alertas CodeQL geralmente contêm CWEs, não CVEs.
         CVEs são mais comuns em alertas Dependabot.
+        
+        Args:
+            alerts: Lista de alertas do Code Scanning
+            include_cwe_only: Se True, retorna também alertas que têm apenas CWEs (sem CVE)
+            
+        Returns:
+            Tupla (cve_alerts, cwe_only_alerts) onde:
+            - cve_alerts: Lista de alertas com CVE IDs
+            - cwe_only_alerts: Lista de alertas com CWEs mas sem CVE (só se include_cwe_only=True)
         """
         if not alerts:
-            return []
+            return [], []
         
         cves = []
-        cves_without_id = []
+        cwe_only_alerts = []
         
         for alert in alerts:
             if not alert or not isinstance(alert, dict):
@@ -343,25 +352,25 @@ class GitHubAPIClient:
                 if cve_id:
                     alert_data["cve_id"] = cve_id
                     cves.append(alert_data)
-            else:
-                cves_without_id.append({
-                    "number": alert.get("number"),
-                    "rule_id": rule.get("id"),
-                    "rule_name": rule.get("name"),
-                    "tags": tags,
-                    "cwes": cwes
-                })
+            elif cwes and include_cwe_only:
+                alert_data["cve_id"] = None
+                cwe_only_alerts.append(alert_data)
 
         logger.info(f"Extraídos {len(cves)} CVEs de {len(alerts)} alertas Code Scanning")
         
-        if cves_without_id:
-            cwe_only_count = sum(1 for a in cves_without_id if a.get("cwes"))
-            logger.info(f"{len(cves_without_id)} alertas Code Scanning sem CVE ({cwe_only_count} com CWEs apenas)")
-            for alert_info in cves_without_id[:5]:
-                cwes_str = ", ".join(alert_info.get("cwes", [])) or "nenhum"
-                logger.debug(f"  - Alert #{alert_info['number']}: {alert_info['rule_id']} - CWEs: {cwes_str}")
+        cwe_only_count = len(cwe_only_alerts)
+        no_cve_count = len(alerts) - len(cves) - cwe_only_count
         
-        return cves
+        if cwe_only_count > 0:
+            logger.info(f"{cwe_only_count} alertas Code Scanning com CWEs apenas (incluídos)")
+            for alert_info in cwe_only_alerts[:3]:
+                cwes_str = ", ".join(alert_info.get("cwes", []))
+                logger.debug(f"  - Alert #{alert_info['alert_number']}: {alert_info['rule_id']} - CWEs: {cwes_str}")
+        
+        if no_cve_count > 0:
+            logger.info(f"{no_cve_count} alertas Code Scanning sem CVE nem CWE (ignorados)")
+        
+        return cves, cwe_only_alerts
 
     def close(self):
         self.session.close()

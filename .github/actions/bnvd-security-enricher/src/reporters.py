@@ -62,7 +62,7 @@ class MarkdownReporter:
     def __init__(self, repo_name: str):
         self.repo_name = repo_name
     
-    def generate(self, alerts: List[Dict], statistics: Optional[Dict] = None) -> str:
+    def generate(self, alerts: List[Dict], statistics: Optional[Dict] = None, cwe_only_alerts: Optional[List[Dict]] = None) -> str:
         if statistics is None:
             statistics = generate_statistics(alerts)
         
@@ -232,6 +232,38 @@ class MarkdownReporter:
                 lines.append("---")
                 lines.append("")
         
+        if cwe_only_alerts:
+            lines.append("## Alertas CWE-Only (Code Scanning)")
+            lines.append("")
+            lines.append("Os seguintes alertas do Code Scanning contêm apenas CWEs (sem CVE para enriquecimento):")
+            lines.append("")
+            
+            for alert in cwe_only_alerts:
+                rule_id = alert.get("rule_id", "Desconhecido")
+                rule_name = alert.get("rule_name", "")
+                severity = alert.get("severity", "unknown")
+                cwes = alert.get("cwes", [])
+                file_path = alert.get("file_path")
+                start_line = alert.get("start_line")
+                alert_url = alert.get("alert_url")
+                
+                lines.append(f"### {rule_id}")
+                if rule_name:
+                    lines.append(f"**Nome:** {rule_name}")
+                lines.append(f"**Severidade:** {get_severity_emoji(severity.upper())} {severity.upper()}")
+                if cwes:
+                    lines.append(f"**CWEs:** {', '.join(cwes)}")
+                if file_path:
+                    location = file_path
+                    if start_line:
+                        location += f":{start_line}"
+                    lines.append(f"**Localização:** `{location}`")
+                if alert_url:
+                    lines.append(f"**Ver no GitHub:** [{rule_id}]({alert_url})")
+                lines.append("")
+                lines.append("---")
+                lines.append("")
+        
         lines.append("## Sobre este Relatório")
         lines.append("")
         lines.append("Este relatório foi gerado automaticamente pela [BNVD Security Enricher Action](https://github.com/marketplace/actions/bnvd-security-enricher).")
@@ -267,20 +299,29 @@ class ReportGenerator:
         alerts: List[Dict], 
         output_format: str = "both",
         json_filename: str = "bnvd-security-report.json",
-        md_filename: str = "bnvd-security-report.md"
+        md_filename: str = "bnvd-security-report.md",
+        cwe_only_alerts: Optional[List[Dict]] = None
     ) -> Dict[str, str]:
         statistics = generate_statistics(alerts)
+        
+        if cwe_only_alerts:
+            statistics["cwe_only_count"] = len(cwe_only_alerts)
+        else:
+            statistics["cwe_only_count"] = 0
         
         outputs = {}
         
         if output_format in ("json", "both"):
             json_report = self.json_reporter.generate(alerts, statistics)
+            if cwe_only_alerts:
+                json_report["cwe_only_alerts"] = cwe_only_alerts
+                json_report["summary"]["cwe_only_count"] = len(cwe_only_alerts)
             json_path = os.path.join(self.output_dir, json_filename)
             self.json_reporter.save(json_report, json_path)
             outputs["json"] = json_path
         
         if output_format in ("markdown", "md", "both"):
-            md_content = self.md_reporter.generate(alerts, statistics)
+            md_content = self.md_reporter.generate(alerts, statistics, cwe_only_alerts)
             md_path = os.path.join(self.output_dir, md_filename)
             self.md_reporter.save(md_content, md_path)
             outputs["markdown"] = md_path

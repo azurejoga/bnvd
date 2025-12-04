@@ -45,6 +45,9 @@ def main():
         log_error("O input 'github_token' é obrigatório!")
         sys.exit(1)
     
+    dependabot_token = get_env("INPUT_DEPENDABOT_TOKEN", "")
+    include_cwe_only = get_env_bool("INPUT_INCLUDE_CWE_ONLY", True)
+    
     bnvd_api_url = get_env("INPUT_BNVD_API_URL", "https://bnvd.org/api/v1")
     nvd_api_key = get_env("INPUT_NVD_API_KEY", "")
     include_pt = get_env_bool("INPUT_INCLUDE_PT", True)
@@ -71,6 +74,8 @@ def main():
     logger.info(f"Filtro de Severidade: {severity_filter}")
     logger.info(f"Formato de Saída: {output_format}")
     logger.info(f"Requisições Paralelas: {max_concurrent}")
+    logger.info(f"Incluir alertas CWE-only: {include_cwe_only}")
+    logger.info(f"Token Dependabot separado: {'Sim' if dependabot_token else 'Não (usando token padrão)'}")
     
     log_group_end()
     
@@ -82,17 +87,30 @@ def main():
         retry_attempts=retry_attempts
     )
     
+    dependabot_client = None
+    if dependabot_token:
+        dependabot_client = GitHubAPIClient(
+            token=dependabot_token,
+            timeout=timeout,
+            retry_attempts=retry_attempts
+        )
+    
     dependabot_alerts = []
     codeql_alerts = []
+    codeql_cwe_only_alerts = []
     dependabot_cves = []
     codeql_cves = []
     
     try:
-        dependabot_alerts = github_client.get_dependabot_alerts(owner, repo)
+        client_for_dependabot = dependabot_client if dependabot_client else github_client
+        dependabot_alerts = client_for_dependabot.get_dependabot_alerts(owner, repo)
         logger.info(f"Alertas Dependabot obtidos: {len(dependabot_alerts)}")
     except Exception as e:
         logger.warning(f"Falha ao obter alertas Dependabot: {e}")
-        log_warning(f"Não foi possível obter alertas Dependabot: {e}")
+        if "403" in str(e) or "Resource not accessible" in str(e):
+            log_warning("O token GITHUB_TOKEN padrão não tem acesso à API Dependabot. Use o input 'dependabot_token' com um PAT que tenha permissão 'security_events'.")
+        else:
+            log_warning(f"Não foi possível obter alertas Dependabot: {e}")
     
     try:
         codeql_alerts = github_client.get_code_scanning_alerts(owner, repo)
@@ -111,13 +129,20 @@ def main():
     
     try:
         if codeql_alerts:
-            codeql_cves = github_client.extract_cves_from_code_scanning(codeql_alerts)
+            codeql_cves, codeql_cwe_only_alerts = github_client.extract_cves_from_code_scanning(
+                codeql_alerts, 
+                include_cwe_only=include_cwe_only
+            )
             logger.info(f"CVEs extraídos de Code Scanning: {len(codeql_cves)}")
+            if codeql_cwe_only_alerts:
+                logger.info(f"Alertas CWE-only de Code Scanning: {len(codeql_cwe_only_alerts)}")
     except Exception as e:
         logger.warning(f"Erro ao processar alertas Code Scanning: {e}")
         log_warning(f"Falha ao extrair CVEs de alertas Code Scanning: {e}")
     
     github_client.close()
+    if dependabot_client:
+        dependabot_client.close()
     
     all_cves = dependabot_cves + codeql_cves
     unique_cves = deduplicate_cves(all_cves)
@@ -125,10 +150,15 @@ def main():
     logger.info(f"CVEs encontrados - Dependabot: {len(dependabot_cves)}, Code Scanning: {len(codeql_cves)}")
     logger.info(f"Total de CVEs únicos: {len(unique_cves)}")
     
+    if codeql_cwe_only_alerts:
+        logger.info(f"Alertas CWE-only (sem enriquecimento CVE): {len(codeql_cwe_only_alerts)}")
+    
     log_group_end()
     
-    if not unique_cves:
-        logger.info("Nenhum CVE encontrado nos alertas.")
+    cwe_only_count = len(codeql_cwe_only_alerts) if codeql_cwe_only_alerts else 0
+    
+    if not unique_cves and cwe_only_count == 0:
+        logger.info("Nenhum CVE ou CWE encontrado nos alertas.")
         
         write_github_output("total_cves_found", 0)
         write_github_output("total_enriched", 0)
@@ -136,15 +166,44 @@ def main():
         write_github_output("high_count", 0)
         write_github_output("medium_count", 0)
         write_github_output("low_count", 0)
+        write_github_output("cwe_only_count", 0)
         write_github_output("has_critical", "false")
         write_github_output("has_high", "false")
         write_github_output("cve_list", "[]")
         write_github_output("execution_time", timer.elapsed)
         
-        log_notice("Nenhuma vulnerabilidade CVE encontrada nos alertas de segurança.", "Scan Completo")
+        log_notice("Nenhuma vulnerabilidade CVE ou CWE encontrada nos alertas de segurança.", "Scan Completo")
         
         report_gen = ReportGenerator(repo_full, workspace)
-        outputs = report_gen.generate_all([], output_format)
+        outputs = report_gen.generate_all([], output_format, cwe_only_alerts=[])
+        
+        if "json" in outputs:
+            write_github_output("report_json_path", outputs["json"])
+        if "markdown" in outputs:
+            write_github_output("report_md_path", outputs["markdown"])
+        
+        logger.info(f"Execução finalizada em {timer}")
+        return
+    
+    if not unique_cves and cwe_only_count > 0:
+        logger.info(f"Nenhum CVE encontrado, mas {cwe_only_count} alertas CWE-only detectados.")
+        
+        write_github_output("total_cves_found", 0)
+        write_github_output("total_enriched", 0)
+        write_github_output("critical_count", 0)
+        write_github_output("high_count", 0)
+        write_github_output("medium_count", 0)
+        write_github_output("low_count", 0)
+        write_github_output("cwe_only_count", cwe_only_count)
+        write_github_output("has_critical", "false")
+        write_github_output("has_high", "false")
+        write_github_output("cve_list", "[]")
+        write_github_output("execution_time", timer.elapsed)
+        
+        log_notice(f"{cwe_only_count} alertas Code Scanning com CWEs encontrados (sem CVE para enriquecimento).", "Scan Completo")
+        
+        report_gen = ReportGenerator(repo_full, workspace)
+        outputs = report_gen.generate_all([], output_format, cwe_only_alerts=codeql_cwe_only_alerts)
         
         if "json" in outputs:
             write_github_output("report_json_path", outputs["json"])
@@ -208,7 +267,7 @@ def main():
     log_group_start("Gerando Relatórios")
     
     report_gen = ReportGenerator(repo_full, workspace)
-    outputs = report_gen.generate_all(filtered_alerts, output_format)
+    outputs = report_gen.generate_all(filtered_alerts, output_format, cwe_only_alerts=codeql_cwe_only_alerts)
     
     log_group_end()
     
@@ -232,6 +291,7 @@ def main():
     write_github_output("high_count", high_count)
     write_github_output("medium_count", medium_count)
     write_github_output("low_count", low_count)
+    write_github_output("cwe_only_count", cwe_only_count)
     write_github_output("has_critical", str(has_critical).lower())
     write_github_output("has_high", str(has_high).lower())
     write_github_output("cve_list", cve_list)
@@ -244,6 +304,8 @@ def main():
     
     log_group_end()
     
+    cwe_summary_line = f"| **Alertas CWE-only** | {cwe_only_count} |" if cwe_only_count > 0 else ""
+    
     summary = f"""
 ## BNVD Security Enricher - Resumo
 
@@ -255,6 +317,7 @@ def main():
 | **Altas** | {high_count} |
 | **Médias** | {medium_count} |
 | **Baixas** | {low_count} |
+{cwe_summary_line}
 | **Tempo de Execução** | {execution_time:.2f}s |
 
 [Ver relatório completo]({outputs.get('markdown', '#')})
